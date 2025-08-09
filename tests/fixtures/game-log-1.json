@@ -1,0 +1,27 @@
+{
+  "game": {
+    "id": "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
+    "hardware": {
+      "os": "macOS 15.5",
+      "cpu": "Apple M21",
+      "arch": "arm64",
+      "ram_gb": 64,
+      "model" : "MacBook Pro"
+    },
+    "date": "2024-06-01",
+    "started_at": "15:00",
+    "players": {
+      "x": {
+        "type": "human",
+        "name": "Alice"
+      },
+      "o": {
+        "type": "ai",
+        "name": "Socrates"
+      }
+    },
+    "board": {
+      "side_length": 19
+    }
+  }
+}
