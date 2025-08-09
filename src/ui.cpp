@@ -61,6 +61,13 @@ void TerminalInput::disable_raw_mode() {
     }
 }
 
+void bad_beep() {
+    // generate an audible terminal beep
+    std::cout << "\a"; // ASCII Bell character
+    std::cout.flush();
+    // Optionally, you can also print a message
+}
+
 int TerminalInput::get_key() const {
     char c;
     if (read(STDIN_FILENO, &c, 1) == 1) {
@@ -91,25 +98,40 @@ void TerminalInput::handle_input(game_state_t* game) const {
     int key = get_key();
 
     switch (key) {
-        case static_cast<int>(Key::Up):
+        case static_cast<int>(Key::Left):
             if (game->cursor_x > 0) game->cursor_x--;
             break;
-        case static_cast<int>(Key::Down):
+        case static_cast<int>(Key::Right):
             if (game->cursor_x < game->board_size - 1) game->cursor_x++;
             break;
-        case static_cast<int>(Key::Left):
+        case static_cast<int>(Key::Up):
             if (game->cursor_y > 0) game->cursor_y--;
             break;
-        case static_cast<int>(Key::Right):
+        case static_cast<int>(Key::Down):
             if (game->cursor_y < game->board_size - 1) game->cursor_y++;
             break;
         case static_cast<int>(Key::Space):
         case static_cast<int>(Key::Enter):
-            if (game->current_player == static_cast<int>(Player::Cross) && 
+            if (game->current_player == static_cast<int>(Player::Cross) &&
                     ::is_valid_move(game->board, game->cursor_x, game->cursor_y, game->board_size)) {
                 double move_time = end_move_timer(game);
                 make_move(game, game->cursor_x, game->cursor_y, static_cast<int>(Player::Cross), move_time, 0);
             }
+            break;
+        case '+':
+            // increase game AI search depth
+            if (game->max_depth >= game->board_size)
+                game->max_depth = game->board_size - 1;
+            else
+                game->max_depth = 1;
+
+            game->max_depth++;
+            break;
+        case '-':
+            if (game->max_depth > 0)
+                game->max_depth--;
+            else
+                game->max_depth = 0;
             break;
         case 'U':
         case 'u':
@@ -118,6 +140,7 @@ void TerminalInput::handle_input(game_state_t* game) const {
             }
             break;
         case '?':
+        case 'h':
             display_rules();
             break;
         case static_cast<int>(Key::Escape):
@@ -141,22 +164,22 @@ void clear_screen() {
 
 void draw_game_header() {
     std::cout << '\n';
-    std::cout << std::format(" {}{} {}(v{}{})\n\n", 
+    std::cout << std::format(" {}{} {}(v{}{})\n\n",
                             COLOR_YELLOW, GAME_DESCRIPTION, COLOR_RED, GAME_VERSION, COLOR_RESET);
-    std::cout << std::format(" {}{}{}\n\n", 
+    std::cout << std::format(" {}{}{}\n\n",
                             COLOR_BRIGHT_GREEN, GAME_COPYRIGHT, COLOR_RESET);
-    std::cout << std::format(" {}{}{}\n", 
+    std::cout << std::format(" {}{}{}\n",
                             ESCAPE_CODE_BOLD, COLOR_MAGENTA, "HINT:");
-    std::cout << std::format(" {}{}{}\n\n\n", 
+    std::cout << std::format(" {}{}{}\n\n\n",
                             ESCAPE_CODE_BOLD, COLOR_MAGENTA, GAME_RULES_BRIEF);
-    std::cout << std::format(" {}{}{}{}\n\n\n", 
+    std::cout << std::format(" {}{}{}{}\n\n\n",
                             COLOR_RESET, COLOR_BRIGHT_CYAN, GAME_RULES_LONG, COLOR_RESET);
-    std::cout << std::format("\n\n\n {}{}{}{}\n\n\n\n\n\n\n", 
-                            COLOR_YELLOW, ESCAPE_CODE_BOLD, 
+    std::cout << std::format("\n\n\n {}{}{}{}\n\n\n\n\n\n\n",
+                            COLOR_YELLOW, ESCAPE_CODE_BOLD,
                             "Press ENTER to start the game, or CTRL-C to quit...", COLOR_RESET);
 
     std::cout.flush();
-    
+
     // Wait for user to press ENTER
     std::cin.get();
     clear_screen();
@@ -187,17 +210,17 @@ void draw_game_history_sidebar(const game_state_t* game, int start_row) {
         std::array<char, 100> move_line{};
         if (move.player == static_cast<int>(Player::Cross)) {
             // Human move (convert to 1-based coordinates for display)
-            std::snprintf(move_line.data(), move_line.size(), 
+            std::snprintf(move_line.data(), move_line.size(),
                          "%s%2d | player %c moved to [%2d, %2d] (in %6.2fs)%s",
-                         player_color, i + 1, player_symbol, 
-                         ::board_to_display_coord(move.x), ::board_to_display_coord(move.y), 
+                         player_color, i + 1, player_symbol,
+                         ::board_to_display_coord(move.x), ::board_to_display_coord(move.y),
                          move.time_taken, COLOR_RESET);
         } else {
             // AI move (convert to 1-based coordinates for display)
-            std::snprintf(move_line.data(), move_line.size(), 
+            std::snprintf(move_line.data(), move_line.size(),
                          "%s%2d | player %c moved to [%2d, %2d] (in %6.2fs, %3d moves evaluated)%s",
-                         player_color, i + 1, player_symbol, 
-                         ::board_to_display_coord(move.x), ::board_to_display_coord(move.y), 
+                         player_color, i + 1, player_symbol,
+                         ::board_to_display_coord(move.x), ::board_to_display_coord(move.y),
                          move.time_taken, move.positions_evaluated, COLOR_RESET);
         }
 
@@ -210,7 +233,7 @@ void draw_board(const game_state_t* game) {
 
     // Column numbers with Unicode characters
     for (int j = 0; j < game->board_size; j++) {
-        if (j > 9) {    
+        if (j > 9) {
             std::printf("%s%2s%s ", COLOR_BLUE, get_coordinate_unicode(j - 10).data(), COLOR_RESET);
         } else {
             std::printf("%s%2s%s ", COLOR_GREEN, get_coordinate_unicode(j).data(), COLOR_RESET);
@@ -222,7 +245,7 @@ void draw_board(const game_state_t* game) {
 
     for (int i = 0; i < game->board_size; i++) {
         std::printf("  ");
-        if (i > 9) {    
+        if (i > 9) {
             std::printf("%s%2s%s ", COLOR_BLUE, get_coordinate_unicode(i - 10).data(), COLOR_RESET);
         } else {
             std::printf("%s%2s%s ", COLOR_GREEN, get_coordinate_unicode(i).data(), COLOR_RESET);
@@ -358,7 +381,7 @@ void draw_status(const game_state_t* game) {
         // Extract clean message without ANSI color codes
         std::string clean_message;
         clean_message.reserve(100);
-        
+
         for (const char* msg = game->ai_status_message; *msg && clean_message.size() < 99; ++msg) {
             if (*msg == '\033') {
                 // Skip ANSI escape sequence
@@ -369,27 +392,27 @@ void draw_status(const game_state_t* game) {
             }
         }
 
-        std::printf("%s%s│%s %-*s %s│\n", prefix.data(), COLOR_RESET, COLOR_MAGENTA, 
+        std::printf("%s%s│%s %-*s %s│\n", prefix.data(), COLOR_RESET, COLOR_MAGENTA,
                    box_width - 4, clean_message.c_str(), COLOR_RESET);
     }
 
     // Game state messages
     if (game->game_state != static_cast<int>(GameState::Running)) {
         std::printf("%s%s├%-*s┤%s\n", prefix.data(), COLOR_RESET, box_width - 4, "──────────────────────────────────────", COLOR_RESET);
-        std::printf("%s%s│%s %-*s %s│\n", prefix.data(), COLOR_RESET, COLOR_RESET, 
+        std::printf("%s%s│%s %-*s %s│\n", prefix.data(), COLOR_RESET, COLOR_RESET,
                    box_width - 4, "", COLOR_RESET);
 
         switch (static_cast<GameState>(game->game_state)) {
             case GameState::HumanWin:
-                std::printf("%s%s│ %-*s %s│\n", prefix.data(), COLOR_RESET, 
+                std::printf("%s%s│ %-*s %s│\n", prefix.data(), COLOR_RESET,
                            box_width - 4, "Human wins! Great job!", COLOR_RESET);
                 break;
             case GameState::AIWin:
-                std::printf("%s%s│ %-*s %s│\n", prefix.data(), COLOR_RESET, 
+                std::printf("%s%s│ %-*s %s│\n", prefix.data(), COLOR_RESET,
                            box_width - 4, "AI wins! Try again!", COLOR_RESET);
                 break;
             case GameState::Draw:
-                std::printf("%s%s│%s %-*s %s│\n", prefix.data(), COLOR_RESET, COLOR_RESET, 
+                std::printf("%s%s│%s %-*s %s│\n", prefix.data(), COLOR_RESET, COLOR_RESET,
                            control_width, "The Game is a draw!", COLOR_RESET);
                 break;
             default:
@@ -397,12 +420,12 @@ void draw_status(const game_state_t* game) {
         }
 
         // Show timing summary
-        auto time_summary = std::format("Time: Human: {:.1f}s | AI: {:.1f}s", 
+        auto time_summary = std::format("Time: Human: {:.1f}s | AI: {:.1f}s",
                                        game->total_human_time, game->total_ai_time);
-        std::printf("%s%s│ %-*s %s│\n", prefix.data(), COLOR_RESET, 
+        std::printf("%s%s│ %-*s %s│\n", prefix.data(), COLOR_RESET,
                    box_width - 4, time_summary.c_str(), COLOR_RESET);
 
-        std::printf("%s%s│ %-*s %s│\n", prefix.data(), COLOR_RESET, 
+        std::printf("%s%s│ %-*s %s│\n", prefix.data(), COLOR_RESET,
                    box_width - 4, "Press any key to exit...", COLOR_RESET);
     }
 
@@ -456,6 +479,24 @@ void display_rules() {
 
 void refresh_display(const game_state_t* game) {
     clear_screen();
+    draw_board(game);
+    draw_status(game);
+}
+
+void refresh_display_with_players(const game_state_t* game,
+                                 const std::string& player1_name,
+                                 const std::string& player2_name,
+                                 const std::string& current_player_name) {
+    clear_screen();
+
+    // Display player information at top
+    std::cout << std::format("{}{}Player 1 (X): {}{} vs {}{}Player 2 (O): {}{}\n",
+                            COLOR_BRIGHT_BLUE, ESCAPE_CODE_BOLD, player1_name, COLOR_RESET,
+                            COLOR_BRIGHT_RED, ESCAPE_CODE_BOLD, player2_name, COLOR_RESET);
+
+    std::cout << std::format("{}Current turn: {}{}\n\n",
+                            COLOR_BRIGHT_GREEN, current_player_name, COLOR_RESET);
+
     draw_board(game);
     draw_status(game);
 }

@@ -12,6 +12,18 @@
 #include "game.h"
 
 //===============================================================================
+// TYPES AND STRUCTURES
+//===============================================================================
+
+/**
+ * Structure to hold move coordinates and priority for sorting.
+ */
+typedef struct {
+    int x, y;
+    int priority;
+} move_t;
+
+//===============================================================================
 // AI MOVE FINDING FUNCTIONS
 //===============================================================================
 
@@ -21,8 +33,9 @@
  * @param game The game state
  * @param best_x Pointer to store the best x coordinate
  * @param best_y Pointer to store the best y coordinate
+ * @param num_threads Number of threads for parallel search (0 = auto, 1 = sequential)
  */
-void find_best_ai_move(game_state_t *game, int *best_x, int *best_y);
+void find_best_ai_move(game_state_t *game, int *best_x, int *best_y, int num_threads = 1);
 
 /**
  * Finds the AI's first move (random placement near human's first move).
@@ -32,6 +45,27 @@ void find_best_ai_move(game_state_t *game, int *best_x, int *best_y);
  * @param best_y Pointer to store the best y coordinate
  */
 void find_first_ai_move(game_state_t *game, int *best_x, int *best_y);
+
+/**
+ * Internal parallel search function for root-level parallelization
+ * 
+ * @param game The game state
+ * @param moves Array of moves to evaluate
+ * @param move_count Number of moves in the array
+ * @param best_x Pointer to store the best x coordinate
+ * @param best_y Pointer to store the best y coordinate
+ * @param num_threads Number of threads to use
+ */
+void find_best_move_parallel_internal(game_state_t* game, move_t* moves, int move_count, 
+                                    int* best_x, int* best_y, int num_threads);
+
+/**
+ * Clone game state for thread safety
+ * 
+ * @param game The game state to clone
+ * @return Cloned game state
+ */
+game_state_t* clone_game_state(game_state_t* game);
 
 //===============================================================================
 // MINIMAX ALGORITHM
@@ -70,14 +104,6 @@ int minimax(int **board, int depth, int alpha, int beta, int maximizing_player, 
 //===============================================================================
 // MOVE EVALUATION AND ORDERING
 //===============================================================================
-
-/**
- * Structure to hold move coordinates and priority for sorting.
- */
-typedef struct {
-    int x, y;
-    int priority;
-} move_t;
 
 /**
  * Optimized move generation using cached interesting moves.

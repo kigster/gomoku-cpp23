@@ -114,10 +114,27 @@ void draw_status(const game_state_t* game);
 void display_rules();
 
 /**
+ * Beeps when an invalid operation happens
+ */
+void bad_beep();
+
+/**
  * Refreshes the entire game display.
  * @param game The game state
  */
 void refresh_display(const game_state_t* game);
+
+/**
+ * Enhanced display with player information.
+ * @param game The game state
+ * @param player1_name Name of player 1
+ * @param player2_name Name of player 2
+ * @param current_player_name Name of current player
+ */
+void refresh_display_with_players(const game_state_t* game,
+                                 const std::string& player1_name,
+                                 const std::string& player2_name,
+                                 const std::string& current_player_name);
 
 } // namespace gomoku::ui
 

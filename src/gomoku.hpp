@@ -82,6 +82,12 @@ enum class Player : int8_t {
     Naught = -1     // AI player (O)
 };
 
+// Player type enum for player hierarchy
+enum class PlayerType : uint8_t {
+    Human,
+    Computer
+};
+
 // Board size concept
 template<int Size>
 concept ValidBoardSize = (Size == 15 || Size == 19);

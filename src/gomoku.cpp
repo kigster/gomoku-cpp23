@@ -25,14 +25,14 @@ namespace detail {
     std::array<int, 20> threat_cost{};
     bool threat_initialized = false;
     std::array<ThreatType, NUM_DIRECTIONS> threats{};
-    
+
     // Constants for legacy C interface
     constexpr int OUT_OF_BOUNDS = 32;
     constexpr int SEARCH_RADIUS = 4;
     constexpr int AI_CELL_EMPTY = 0;
     constexpr int AI_CELL_CROSSES = 1;
     constexpr int AI_CELL_NAUGHTS = -1;
-    
+
     // Convert between C and C++ player representations
     constexpr Player int_to_player(int player) noexcept {
         switch (player) {
@@ -41,15 +41,15 @@ namespace detail {
             default: return Player::Empty;
         }
     }
-    
+
     constexpr int player_to_int(Player player) noexcept {
         return static_cast<int>(player);
     }
-    
+
     constexpr ThreatType int_to_threat(int threat) noexcept {
         return static_cast<ThreatType>(threat);
     }
-    
+
     constexpr int threat_to_int(ThreatType threat) noexcept {
         return static_cast<int>(threat);
     }
@@ -61,9 +61,9 @@ namespace detail {
 
 void populate_threat_matrix() {
     if (detail::threat_initialized) return;
-    
+
     using namespace detail;
-    
+
     // Initialize threat costs based on original algorithm
     threat_cost[threat_to_int(ThreatType::Nothing)] = 0;
     threat_cost[threat_to_int(ThreatType::Five)] = 1000000;
@@ -77,7 +77,7 @@ void populate_threat_matrix() {
     threat_cost[threat_to_int(ThreatType::ThreeAndFour)] = 200000;
     threat_cost[threat_to_int(ThreatType::ThreeAndThree)] = 50000;
     threat_cost[threat_to_int(ThreatType::ThreeAndThreeBroken)] = 10000;
-    
+
     detail::threat_initialized = true;
 }
 
@@ -89,39 +89,39 @@ void populate_threat_matrix() {
     if (line.size() < NEED_TO_WIN * 2 - 1) {
         return ThreatType::Nothing;
     }
-    
+
     int center = line.size() / 2;
     if (line[center] != player) {
         return ThreatType::Nothing;
     }
-    
+
     Player opponent = other_player(player);
-    
+
     // Count consecutive stones in both directions
     int count = 1; // Center stone
-    
+
     // Count left
     int left_count = 0;
     for (int i = center - 1; i >= 0 && line[i] == player; --i) {
         ++left_count;
         ++count;
     }
-    
-    // Count right  
+
+    // Count right
     int right_count = 0;
     for (int i = center + 1; i < static_cast<int>(line.size()) && line[i] == player; ++i) {
         ++right_count;
         ++count;
     }
-    
+
     // Check for blocking by opponents
     bool left_blocked = (center - left_count - 1 >= 0) && (line[center - left_count - 1] == opponent);
     bool right_blocked = (center + right_count + 1 < static_cast<int>(line.size())) && (line[center + right_count + 1] == opponent);
-    
+
     // Check for open spaces
     bool left_open = (center - left_count - 1 >= 0) && (line[center - left_count - 1] == Player::Empty);
     bool right_open = (center + right_count + 1 < static_cast<int>(line.size())) && (line[center + right_count + 1] == Player::Empty);
-    
+
     // Determine threat type based on pattern analysis
     if (count >= NEED_TO_WIN) {
         return ThreatType::Five;
@@ -145,22 +145,22 @@ void populate_threat_matrix() {
             return ThreatType::NearEnemy;
         }
     }
-    
+
     return ThreatType::Nothing;
 }
 
 [[nodiscard]] int calc_combination_threat(ThreatType one, ThreatType two) {
     using namespace detail;
-    
+
     populate_threat_matrix();
-    
+
     // Calculate bonus for threat combinations
     if (one == ThreatType::Three && two == ThreatType::Four) {
         return threat_cost[threat_to_int(ThreatType::ThreeAndFour)];
     } else if (one == ThreatType::Three && two == ThreatType::Three) {
         return threat_cost[threat_to_int(ThreatType::ThreeAndThree)];
     }
-    
+
     return 0;
 }
 
@@ -171,47 +171,47 @@ void populate_threat_matrix() {
 template<int Size> requires ValidBoardSize<Size>
 [[nodiscard]] int calc_score_at(const Board<Size>& board, Player player, const Position& pos) {
     populate_threat_matrix();
-    
+
     // Don't evaluate if position is out of bounds
     if (!board.is_valid_position(pos)) {
         return 0;
     }
-    
+
     int total_score = 0;
     std::array<ThreatType, NUM_DIRECTIONS> threats;
-    
+
     // Analyze all four directions - simulate placing the stone
     for (int dir = 0; dir < NUM_DIRECTIONS; ++dir) {
         auto line = board.get_line(pos, DIRECTIONS[dir]);
         std::array<Player, NEED_TO_WIN * 2 - 1> player_line;
         std::ranges::copy(line, player_line.begin());
-        
+
         // The center position should be the player we're evaluating for
         player_line[NEED_TO_WIN - 1] = player;
-        
+
         ThreatType threat = calc_threat_in_one_dimension(player_line, player);
         threats[dir] = threat;
         total_score += detail::threat_cost[detail::threat_to_int(threat)];
     }
-    
+
     // Add combination bonuses
     for (int i = 0; i < NUM_DIRECTIONS; ++i) {
         for (int j = i + 1; j < NUM_DIRECTIONS; ++j) {
             total_score += calc_combination_threat(threats[i], threats[j]);
         }
     }
-    
+
     return total_score;
 }
 
 template<int Size> requires ValidBoardSize<Size>
-[[nodiscard]] int evaluate_position_incremental(const Board<Size>& board, Player player, 
+[[nodiscard]] int evaluate_position_incremental(const Board<Size>& board, Player player,
                                                const Position& last_move) {
     populate_threat_matrix();
-    
+
     int total_score = 0;
     Player opponent = other_player(player);
-    
+
     // Check for immediate win/loss first
     if (board.has_winner(player)) {
         return WIN_SCORE;
@@ -219,14 +219,14 @@ template<int Size> requires ValidBoardSize<Size>
     if (board.has_winner(opponent)) {
         return LOSE_SCORE;
     }
-    
+
     // Only evaluate positions within radius of the last move for speed
     constexpr int eval_radius = 3;
     int min_x = std::max(0, last_move.x - eval_radius);
     int max_x = std::min(Size - 1, last_move.x + eval_radius);
     int min_y = std::max(0, last_move.y - eval_radius);
     int max_y = std::min(Size - 1, last_move.y + eval_radius);
-    
+
     for (int i = min_x; i <= max_x; ++i) {
         for (int j = min_y; j <= max_y; ++j) {
             Position pos{i, j};
@@ -237,17 +237,17 @@ template<int Size> requires ValidBoardSize<Size>
             }
         }
     }
-    
+
     return total_score;
 }
 
 template<int Size> requires ValidBoardSize<Size>
 [[nodiscard]] int evaluate_position(const Board<Size>& board, Player player) {
     populate_threat_matrix();
-    
+
     int total_score = 0;
     Player opponent = other_player(player);
-    
+
     // Check for immediate win/loss first
     if (board.has_winner(player)) {
         return WIN_SCORE;
@@ -255,7 +255,7 @@ template<int Size> requires ValidBoardSize<Size>
     if (board.has_winner(opponent)) {
         return LOSE_SCORE;
     }
-    
+
     // Evaluate all positions
     for (int i = 0; i < Size; ++i) {
         for (int j = 0; j < Size; ++j) {
@@ -267,7 +267,7 @@ template<int Size> requires ValidBoardSize<Size>
             }
         }
     }
-    
+
     return total_score;
 }
 
@@ -305,7 +305,7 @@ using namespace gomoku::detail;
 int evaluate_position(int** board, int size, int player) {
     // Convert to C++ types and delegate
     Player cpp_player = int_to_player(player);
-    
+
     if (size == 15) {
         Board<15> cpp_board;
         for (int i = 0; i < size; ++i) {
@@ -323,14 +323,14 @@ int evaluate_position(int** board, int size, int player) {
         }
         return gomoku::evaluate_position(cpp_board, cpp_player);
     }
-    
+
     return 0;
 }
 
 int evaluate_position_incremental(int** board, int size, int player, int last_x, int last_y) {
     Player cpp_player = int_to_player(player);
     Position last_move{last_x, last_y};
-    
+
     if (size == 15) {
         Board<15> cpp_board;
         for (int i = 0; i < size; ++i) {
@@ -348,13 +348,13 @@ int evaluate_position_incremental(int** board, int size, int player, int last_x,
         }
         return gomoku::evaluate_position_incremental(cpp_board, cpp_player, last_move);
     }
-    
+
     return 0;
 }
 
 int has_winner(int** board, int size, int player) {
     Player cpp_player = int_to_player(player);
-    
+
     if (size == 15) {
         Board<15> cpp_board;
         for (int i = 0; i < size; ++i) {
@@ -373,13 +373,13 @@ int has_winner(int** board, int size, int player) {
         return cpp_board.has_winner(cpp_player) ? 1 : 0;
     }
     
-    return 0;
+    return 0; // Unsupported board size
 }
 
 int calc_score_at(int** board, int size, int player, int x, int y) {
     Player cpp_player = int_to_player(player);
     Position pos{x, y};
-    
+
     if (size == 15) {
         Board<15> cpp_board;
         for (int i = 0; i < size; ++i) {
@@ -397,18 +397,18 @@ int calc_score_at(int** board, int size, int player, int x, int y) {
         }
         return gomoku::calc_score_at(cpp_board, cpp_player, pos);
     }
-    
+
     return 0;
 }
 
 int calc_threat_in_one_dimension(int* row, int player) {
     constexpr int line_size = NEED_TO_WIN * 2 - 1;
     std::array<Player, line_size> cpp_line;
-    
+
     for (int i = 0; i < line_size; ++i) {
         cpp_line[i] = int_to_player(row[i]);
     }
-    
+
     ThreatType threat = gomoku::calc_threat_in_one_dimension(cpp_line, int_to_player(player));
     return threat_to_int(threat);
 }

@@ -17,8 +17,8 @@ CXXFLAGS         = -Wall -Wunused-parameter -Wextra -Wpedantic -std=c++23 -Isrc 
 LDFLAGS          = -lm -pthread
 
 TARGET           = gomoku
-# Mixed C and C++ sources - convert gradually
-CPP_SOURCES      = src/gomoku.cpp src/board.cpp src/main.cpp src/ui.cpp src/cli.cpp src/ai.cpp src/game.cpp
+# Modern C++23 sources with new player hierarchy and parallel AI
+CPP_SOURCES      = src/gomoku.cpp src/board.cpp src/main.cpp src/ui.cpp src/cli.cpp src/ai.cpp src/game.cpp src/player.cpp src/ai_parallel.cpp src/game_coordinator.cpp
 C_SOURCES        =
 CPP_OBJECTS      = $(CPP_SOURCES:.cpp=.o)
 C_OBJECTS        = $(C_SOURCES:.c=.o)

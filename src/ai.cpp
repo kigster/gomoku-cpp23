@@ -14,6 +14,7 @@
 #include "ai.h"
 #include "ansi.h"
 #include "gomoku.hpp"
+#include "util/thread_pool.hpp"
 
 //===============================================================================
 // AI CONSTANTS AND STRUCTURES
@@ -34,12 +35,12 @@ int generate_moves_optimized(game_state_t *game, move_t *moves, int current_play
 
     // Use cached interesting moves
     for (int i = 0; i < game->interesting_move_count; i++) {
-        if (game->interesting_moves[i].is_active && 
+        if (game->interesting_moves[i].is_active &&
                 game->board[game->interesting_moves[i].x][game->interesting_moves[i].y] == static_cast<int>(gomoku::Player::Empty)) {
 
             moves[move_count].x = game->interesting_moves[i].x;
             moves[move_count].y = game->interesting_moves[i].y;
-            moves[move_count].priority = get_move_priority_optimized(game, 
+            moves[move_count].priority = get_move_priority_optimized(game,
                     game->interesting_moves[i].x, game->interesting_moves[i].y, current_player);
             move_count++;
         }
@@ -101,7 +102,7 @@ int evaluate_threat_fast(int **board, int x, int y, int player, int board_size) 
 
         // Count in positive direction
         int nx = x + dx, ny = y + dy;
-        while (nx >= 0 && nx < board_size && ny >= 0 && ny < board_size && 
+        while (nx >= 0 && nx < board_size && ny >= 0 && ny < board_size &&
                 board[nx][ny] == player) {
             count++;
             nx += dx;
@@ -111,7 +112,7 @@ int evaluate_threat_fast(int **board, int x, int y, int player, int board_size) 
         // Count in negative direction
         nx = x - dx;
         ny = y - dy;
-        while (nx >= 0 && nx < board_size && ny >= 0 && ny < board_size && 
+        while (nx >= 0 && nx < board_size && ny >= 0 && ny < board_size &&
                 board[nx][ny] == player) {
             count++;
             nx -= dx;
@@ -336,7 +337,7 @@ int minimax_with_timeout(game_state_t *game, int **board, int depth, int alpha, 
         }
 
         // Store in transposition table
-        int flag = (max_eval <= original_alpha) ? TT_UPPER_BOUND : 
+        int flag = (max_eval <= original_alpha) ? TT_UPPER_BOUND :
             (max_eval >= beta) ? TT_LOWER_BOUND : TT_EXACT;
         store_transposition(game, hash, max_eval, depth, flag, best_x, best_y);
 
@@ -403,7 +404,7 @@ int minimax_with_timeout(game_state_t *game, int **board, int depth, int alpha, 
         }
 
         // Store in transposition table
-        int flag = (min_eval <= original_alpha) ? TT_UPPER_BOUND : 
+        int flag = (min_eval <= original_alpha) ? TT_UPPER_BOUND :
             (min_eval >= beta) ? TT_LOWER_BOUND : TT_EXACT;
         store_transposition(game, hash, min_eval, depth, flag, best_x, best_y);
 
@@ -452,7 +453,7 @@ void find_first_ai_move(game_state_t *game, int *best_x, int *best_y) {
                 int new_y = human_y + dy;
 
                 // Check bounds and if position is empty
-                if (new_x >= 0 && new_x < game->board_size && 
+                if (new_x >= 0 && new_x < game->board_size &&
                         new_y >= 0 && new_y < game->board_size &&
                         game->board[new_x][new_y] == static_cast<int>(gomoku::Player::Empty)) {
                     valid_moves[move_count][0] = new_x;
@@ -479,7 +480,7 @@ void find_first_ai_move(game_state_t *game, int *best_x, int *best_y) {
     }
 }
 
-void find_best_ai_move(game_state_t *game, int *best_x, int *best_y) {
+void find_best_ai_move(game_state_t *game, int *best_x, int *best_y, int num_threads) {
     // Initialize timeout tracking
     game->search_start_time = get_current_time();
     game->search_timed_out = 0;
@@ -508,10 +509,10 @@ void find_best_ai_move(game_state_t *game, int *best_x, int *best_y) {
     // Clear previous AI status message and show thinking message
     strcpy(game->ai_status_message, "");
     if (game->move_timeout > 0) {
-        printf("%s%s%s It's AI's Turn... Please wait... (timeout: %ds)\n", 
+        printf("%s%s%s It's AI's Turn... Please wait... (timeout: %ds)\n",
                 COLOR_BLUE, "O", COLOR_RESET, game->move_timeout);
     } else {
-        printf("%s%s%s It's AI's Turn... Please wait...\n", 
+        printf("%s%s%s It's AI's Turn... Please wait...\n",
                 COLOR_BLUE, "O", COLOR_RESET);
     }
     fflush(stdout);
@@ -525,8 +526,8 @@ void find_best_ai_move(game_state_t *game, int *best_x, int *best_y) {
         if (evaluate_threat_fast(game->board, moves[i].x, moves[i].y, static_cast<int>(gomoku::Player::Naught), game->board_size) >= 100000) {
             *best_x = moves[i].x;
             *best_y = moves[i].y;
-            snprintf(game->ai_status_message, sizeof(game->ai_status_message), 
-                    "%s%s%s It's a checkmate ;-)", 
+            snprintf(game->ai_status_message, sizeof(game->ai_status_message),
+                    "%s%s%s It's a checkmate ;-)",
                     COLOR_BLUE, "O", COLOR_RESET);
             add_ai_history_entry(game, 1); // Only checked 1 move
             return;
@@ -544,7 +545,13 @@ void find_best_ai_move(game_state_t *game, int *best_x, int *best_y) {
         *best_y = moves[0].y;
     }
 
-    // Iterative deepening search
+    // Use parallel search for multiple threads and sufficient moves
+    if (num_threads > 1 && move_count > 1 && stone_count >= 2 && game->move_timeout == 0) {
+        find_best_move_parallel_internal(game, moves, move_count, best_x, best_y, num_threads);
+        return;
+    }
+
+    // Iterative deepening search (sequential)
     for (int current_depth = 1; current_depth <= game->max_depth; current_depth++) {
         if (is_search_timed_out(game)) {
             break;
@@ -587,8 +594,8 @@ void find_best_ai_move(game_state_t *game, int *best_x, int *best_y) {
 
                 // Early termination for very good moves
                 if (score >= WIN_SCORE - 1000) {
-                    snprintf(game->ai_status_message, sizeof(game->ai_status_message), 
-                            "%s%s%s Win (depth %d, %d moves).", 
+                    snprintf(game->ai_status_message, sizeof(game->ai_status_message),
+                            "%s%s%s Win (depth %d, %d moves).",
                             COLOR_BLUE, "O", COLOR_RESET, current_depth, moves_considered + 1);
                     *best_x = depth_best_x;
                     *best_y = depth_best_y;
@@ -620,16 +627,125 @@ void find_best_ai_move(game_state_t *game, int *best_x, int *best_y) {
     if (strlen(game->ai_status_message) == 0) {
         double elapsed = get_current_time() - game->search_start_time;
         if (game->search_timed_out) {
-            snprintf(game->ai_status_message, sizeof(game->ai_status_message), 
-                    "%.0fs timeout, checked %d moves", 
+            snprintf(game->ai_status_message, sizeof(game->ai_status_message),
+                    "%.0fs timeout, checked %d moves",
                     elapsed, moves_considered);
         } else {
-            snprintf(game->ai_status_message, sizeof(game->ai_status_message), 
-                    "Done in %.0fs (checked %d moves)", 
+            snprintf(game->ai_status_message, sizeof(game->ai_status_message),
+                    "Done in %.0fs (checked %d moves)",
                     elapsed, moves_considered);
         }
     }
 
     // Add to AI history
     add_ai_history_entry(game, moves_considered);
-} 
+}
+
+
+//===============================================================================
+// PARALLEL SEARCH IMPLEMENTATION
+//===============================================================================
+
+/**
+ * Internal parallel search function for root-level parallelization
+ */
+void find_best_move_parallel_internal(game_state_t* game, move_t* moves, int move_count, 
+                                    int* best_x, int* best_y, int num_threads) {
+    using namespace gomoku;
+    
+    // Create thread pool
+    gomoku::ThreadPool thread_pool(num_threads == 0 ? 
+        std::max(1u, std::thread::hardware_concurrency() - 1) : num_threads);
+    
+    // Limit moves to evaluate in parallel (top candidates)
+    int parallel_moves = std::min(move_count, num_threads * 2);
+    
+    std::vector<std::future<std::pair<int, int>>> futures;
+    std::vector<int> scores(parallel_moves, -WIN_SCORE - 1);
+    
+    // Evaluate top moves in parallel
+    for (int m = 0; m < parallel_moves; m++) {
+        futures.emplace_back(
+            thread_pool.enqueue([game, moves, m]() -> std::pair<int, int> {
+                // Clone game state for thread safety
+                game_state_t* game_copy = clone_game_state(game);
+                
+                int i = moves[m].x;
+                int j = moves[m].y;
+                
+                // Make move
+                game_copy->board[i][j] = static_cast<int>(gomoku::Player::Naught);
+                
+                // Update hash
+                int player_index = 1; // Naught player
+                int pos = i * game_copy->board_size + j;
+                game_copy->current_hash ^= game_copy->zobrist_keys[player_index][pos];
+                
+                // Search with minimax
+                int score = minimax_with_timeout(game_copy, game_copy->board, 
+                    game_copy->max_depth - 1, -WIN_SCORE - 1, WIN_SCORE + 1,
+                    0, static_cast<int>(gomoku::Player::Naught), i, j);
+                
+                // Cleanup
+                cleanup_game(game_copy);
+                
+                return std::make_pair(score, m);
+            })
+        );
+    }
+    
+    // Collect results
+    int best_score = -WIN_SCORE - 1;
+    int best_move_index = 0;
+    int moves_evaluated = 0;
+    
+    for (size_t i = 0; i < futures.size(); i++) {
+        auto result = futures[i].get();
+        int score = result.first;
+        int move_idx = result.second;
+        
+        if (score > best_score) {
+            best_score = score;
+            best_move_index = move_idx;
+        }
+        moves_evaluated++;
+    }
+    
+    // Set best move
+    *best_x = moves[best_move_index].x;
+    *best_y = moves[best_move_index].y;
+    
+    // Update AI status
+    double elapsed = get_current_time() - game->search_start_time;
+    snprintf(game->ai_status_message, sizeof(game->ai_status_message),
+        "Done in %.0fs (checked %d moves)", elapsed, moves_evaluated);
+    
+    add_ai_history_entry(game, moves_evaluated);
+}
+
+/**
+ * Clone game state for thread-safe parallel evaluation
+ */
+game_state_t* clone_game_state(game_state_t* original) {
+    game_state_t* clone = (game_state_t*)malloc(sizeof(game_state_t));
+    if (!clone) return nullptr;
+    
+    // Copy the entire structure
+    memcpy(clone, original, sizeof(game_state_t));
+    
+    // Clone the board
+    clone->board = create_board(original->board_size);
+    if (!clone->board) {
+        free(clone);
+        return nullptr;
+    }
+    
+    // Copy board contents
+    for (int i = 0; i < original->board_size; i++) {
+        for (int j = 0; j < original->board_size; j++) {
+            clone->board[i][j] = original->board[i][j];
+        }
+    }
+    
+    return clone;
+}

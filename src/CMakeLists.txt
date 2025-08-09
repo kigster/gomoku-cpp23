@@ -1,4 +1,4 @@
-# Source files for the gomoku executable (C++23)
+# Source files for the gomoku executable (Modern C++23 with Player hierarchy and parallel AI)
 set(GOMOKU_SOURCES
     main.cpp
     gomoku.cpp
@@ -7,6 +7,9 @@ set(GOMOKU_SOURCES
     ai.cpp
     ui.cpp
     cli.cpp
+    player.cpp
+    ai_parallel.cpp
+    game_coordinator.cpp
 )
 
 # Create the gomoku executable

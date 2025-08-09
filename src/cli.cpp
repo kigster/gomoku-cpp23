@@ -39,19 +39,127 @@ std::expected<void, std::string> Config::validate() const {
         return std::unexpected("Timeout must be a positive number");
     }
     
+    // Validate thread count
+    if (thread_count < 0) {
+        return std::unexpected("Thread count must be a positive number");
+    }
+    
+    if (thread_count > static_cast<int>(std::thread::hardware_concurrency())) {
+        return std::unexpected("Thread count cannot exceed hardware concurrency");
+    }
+    
+    // Validate player types
+    if (player1.type != "human" && player1.type != "computer") {
+        return std::unexpected("Player 1 type must be 'human' or 'computer'");
+    }
+    
+    if (player2.type != "human" && player2.type != "computer") {
+        return std::unexpected("Player 2 type must be 'human' or 'computer'");
+    }
+    
+    // Validate computer difficulty levels
+    if (player1.type == "computer" && !player1.difficulty.empty()) {
+        if (player1.difficulty != "easy" && player1.difficulty != "medium" && player1.difficulty != "hard") {
+            return std::unexpected("Player 1 difficulty must be 'easy', 'medium', or 'hard'");
+        }
+    }
+    
+    if (player2.type == "computer" && !player2.difficulty.empty()) {
+        if (player2.difficulty != "easy" && player2.difficulty != "medium" && player2.difficulty != "hard") {
+            return std::unexpected("Player 2 difficulty must be 'easy', 'medium', or 'hard'");
+        }
+    }
+    
     return {};
 }
 
 auto Config::to_c_struct() const {
-    return cli_config_t{
-        .board_size = board_size,
-        .max_depth = max_depth,
-        .move_timeout = move_timeout,
-        .show_help = show_help ? 1 : 0,
-        .invalid_args = 0,
-        .enable_undo = enable_undo ? 1 : 0,
-        .skip_welcome = skip_welcome ? 1 : 0
+    cli_config_t c_config{};
+    
+    c_config.board_size = board_size;
+    c_config.max_depth = max_depth;
+    c_config.move_timeout = move_timeout;
+    c_config.thread_count = thread_count;
+    c_config.show_help = show_help ? 1 : 0;
+    c_config.invalid_args = 0;
+    c_config.enable_undo = enable_undo ? 1 : 0;
+    c_config.skip_welcome = skip_welcome ? 1 : 0;
+    
+    // Copy player configurations
+    std::strncpy(c_config.player1_type, player1.type.c_str(), sizeof(c_config.player1_type) - 1);
+    std::strncpy(c_config.player1_name, player1.name.c_str(), sizeof(c_config.player1_name) - 1);
+    std::strncpy(c_config.player1_difficulty, player1.difficulty.c_str(), sizeof(c_config.player1_difficulty) - 1);
+    
+    std::strncpy(c_config.player2_type, player2.type.c_str(), sizeof(c_config.player2_type) - 1);
+    std::strncpy(c_config.player2_name, player2.name.c_str(), sizeof(c_config.player2_name) - 1);
+    std::strncpy(c_config.player2_difficulty, player2.difficulty.c_str(), sizeof(c_config.player2_difficulty) - 1);
+    
+    return c_config;
+}
+
+//===============================================================================
+// HELPER FUNCTIONS
+//===============================================================================
+
+/**
+ * Parse players string like "human,computer" or "computer:hard,human:Alice"
+ */
+std::expected<std::pair<PlayerConfig, PlayerConfig>, ParseError> parse_players_string(std::string_view players_str) {
+    // Split by comma
+    auto comma_pos = players_str.find(',');
+    if (comma_pos == std::string_view::npos) {
+        return std::unexpected(ParseError::InvalidArgument);
+    }
+    
+    std::string_view player1_str = players_str.substr(0, comma_pos);
+    std::string_view player2_str = players_str.substr(comma_pos + 1);
+    
+    auto parse_single_player = [](std::string_view player_str) -> std::expected<PlayerConfig, ParseError> {
+        PlayerConfig config;
+        
+        // Split by colon for additional parameters
+        auto colon_pos = player_str.find(':');
+        if (colon_pos == std::string_view::npos) {
+            // Simple case: just "human" or "computer"
+            std::string type{player_str};
+            if (type != "human" && type != "computer") {
+                return std::unexpected(ParseError::InvalidArgument);
+            }
+            config.type = type;
+            config.difficulty = (type == "computer") ? "medium" : "";
+        } else {
+            // Complex case: "computer:hard" or "human:Alice"
+            std::string type{player_str.substr(0, colon_pos)};
+            std::string param{player_str.substr(colon_pos + 1)};
+            
+            if (type != "human" && type != "computer") {
+                return std::unexpected(ParseError::InvalidArgument);
+            }
+            
+            config.type = type;
+            
+            if (type == "computer") {
+                // Parameter is difficulty
+                if (param != "easy" && param != "medium" && param != "hard") {
+                    return std::unexpected(ParseError::InvalidArgument);
+                }
+                config.difficulty = param;
+            } else {
+                // Parameter is name
+                config.name = param;
+            }
+        }
+        
+        return config;
     };
+    
+    auto player1_result = parse_single_player(player1_str);
+    if (!player1_result) return std::unexpected(player1_result.error());
+    
+    auto player2_result = parse_single_player(player2_str);
+    if (!player2_result) return std::unexpected(player2_result.error());
+    
+    return std::pair{*player1_result, *player2_result};
 }
 
 //===============================================================================
@@ -77,6 +185,8 @@ std::expected<Config, ParseError> parse_arguments_modern(std::span<const char*> 
         option{"level", required_argument, nullptr, 'l'},
         option{"timeout", required_argument, nullptr, 't'},
         option{"board", required_argument, nullptr, 'b'},
+        option{"players", required_argument, nullptr, 'p'},
+        option{"threads", required_argument, nullptr, 'j'},
         option{"help", no_argument, nullptr, 'h'},
         option{"undo", no_argument, nullptr, 'u'},
         option{"skip-welcome", no_argument, nullptr, 's'},
@@ -86,7 +196,7 @@ std::expected<Config, ParseError> parse_arguments_modern(std::span<const char*> 
     int option_index = 0;
     int c;
     
-    while ((c = getopt_long(argc, argv, "d:l:t:b:hus", 
+    while ((c = getopt_long(argc, argv, "d:l:t:b:p:j:hus", 
                            const_cast<option*>(long_options.data()), &option_index)) != -1) {
         switch (c) {
             case 'd': {
@@ -132,6 +242,29 @@ std::expected<Config, ParseError> parse_arguments_modern(std::span<const char*> 
                 config.board_size = std::atoi(optarg);
                 if (config.board_size != 15 && config.board_size != 19) {
                     return std::unexpected(ParseError::InvalidBoardSize);
+                }
+                break;
+            }
+            
+            case 'p': {
+                auto players_result = parse_players_string(optarg);
+                if (!players_result) {
+                    return std::unexpected(players_result.error());
+                }
+                config.player1 = players_result->first;
+                config.player2 = players_result->second;
+                break;
+            }
+            
+            case 'j': {
+                config.thread_count = std::atoi(optarg);
+                int max_threads = static_cast<int>(std::thread::hardware_concurrency()) - 1;
+                if (max_threads <= 0) max_threads = 1;
+                
+                if (config.thread_count < 1 || config.thread_count > max_threads) {
+                    std::cout << std::format("{}{}ERROR: Thread count must be between 1 and {} (hardware cores - 1){}\n",
+                                           COLOR_BRIGHT_RED, ESCAPE_CODE_BOLD, max_threads, COLOR_RESET);
+                    return std::unexpected(ParseError::InvalidArgument);
                 }
                 break;
             }
@@ -183,11 +316,35 @@ void print_help_modern(std::string_view program_name) {
                             COLOR_YELLOW, COLOR_RESET);
     std::cout << std::format("  {}-b, --board 15,19{}     Board size. Can be either 19 or 15.\n", 
                             COLOR_YELLOW, COLOR_RESET);
+    std::cout << std::format("  {}-p, --players SPEC{}    Player configuration (see below)\n", 
+                            COLOR_YELLOW, COLOR_RESET);
+    std::cout << std::format("  {}-j, --threads N{}       Number of threads for parallel AI (1 to cores-1)\n", 
+                            COLOR_YELLOW, COLOR_RESET);
     std::cout << std::format("  {}-u, --undo{}            Enable the Undo feature\n", 
                             COLOR_YELLOW, COLOR_RESET);
     std::cout << std::format("  {}-s, --skip-welcome{}    Skip the welcome screen\n", 
                             COLOR_YELLOW, COLOR_RESET);
     std::cout << std::format("  {}-h, --help{}            Show this help message\n", 
+                            COLOR_YELLOW, COLOR_RESET);
+
+    std::cout << std::format("\n{}PLAYER CONFIGURATION:{}\n", COLOR_BRIGHT_MAGENTA, COLOR_RESET);
+    std::cout << std::format("  Format: --players PLAYER1,PLAYER2\n");
+    std::cout << std::format("  Player types: {}human{} or {}computer{}\n", 
+                            COLOR_GREEN, COLOR_RESET, COLOR_GREEN, COLOR_RESET);
+    std::cout << std::format("  Computer difficulties: {}easy{}, {}medium{}, {}hard{}\n",
+                            COLOR_GREEN, COLOR_RESET, COLOR_GREEN, COLOR_RESET, COLOR_GREEN, COLOR_RESET);
+    std::cout << std::format("  Examples:\n");
+    std::cout << std::format("    {}--players human,computer{}        (default: human vs computer)\n",
+                            COLOR_YELLOW, COLOR_RESET);
+    std::cout << std::format("    {}--players computer,human{}        (computer moves first)\n",
+                            COLOR_YELLOW, COLOR_RESET);  
+    std::cout << std::format("    {}--players human,human{}           (two human players)\n",
+                            COLOR_YELLOW, COLOR_RESET);
+    std::cout << std::format("    {}--players computer,computer{}     (computer vs computer)\n",
+                            COLOR_YELLOW, COLOR_RESET);
+    std::cout << std::format("    {}--players computer:hard,human{}   (hard computer vs human)\n",
+                            COLOR_YELLOW, COLOR_RESET);
+    std::cout << std::format("    {}--players human:Alice,human:Bob{} (named human players)\n",
                             COLOR_YELLOW, COLOR_RESET);
 
     std::cout << std::format("\n{}EXAMPLES:{}\n", COLOR_BRIGHT_MAGENTA, COLOR_RESET);
@@ -196,6 +353,10 @@ void print_help_modern(std::string_view program_name) {
     std::cout << std::format("  {}{} -d 4 -t 30 -b 19{}\n", 
                             COLOR_YELLOW, program_name, COLOR_RESET);
     std::cout << std::format("  {}{} --level hard --timeout 60{}\n", 
+                            COLOR_YELLOW, program_name, COLOR_RESET);
+    std::cout << std::format("  {}{} --players computer:easy,computer:hard{}\n", 
+                            COLOR_YELLOW, program_name, COLOR_RESET);
+    std::cout << std::format("  {}{} --players human:Alice,human:Bob --undo{}\n", 
                             COLOR_YELLOW, program_name, COLOR_RESET);
 
     std::cout << std::format("\n{}DIFFICULTY LEVELS:{}\n", COLOR_BRIGHT_MAGENTA, COLOR_RESET);
