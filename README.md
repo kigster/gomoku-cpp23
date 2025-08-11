@@ -20,7 +20,7 @@ Here is the game where the human player prevailed, although it is exceedingly di
 > [!TIP]
 > These timings were possible only after additional optimizations were introduced in [this PR](https://github.com/kigster/gomoku-ansi-c/pull/4).
 
-<img src="doc/gomoku-play-on-hard.png" width="700" border="1" style="border-radius: 10px"/>
+<img src="doc/gomoku-play-on-hard.png" width="700" border="1" style=" border-radius: 10px"/>
 
 ## Building the Game for the Impatient
 
@@ -31,26 +31,25 @@ make build -j 4
 ./gomoku -h
 ```
 
+<img src="doc/gomoku-build.png" width="700" border="1" style="border-radius: 10px"/>
+
 ## Alternatively
 
 Using CMake:
 
 ```bash
 make cmake-build cmake-test
-./gomoku -h
+./gomoku -h | grep -i version
 ```
+
+<img src="doc/gomoku-cmake-build.png" width="700" border="1" style="border-radius: 10px"/>
 
 See the following screenshot for an example:
 
-<img src="doc/gomoku-build.png" width="700" border="1" style="border-radius: 10px"/>
 
 ## Features
 
-Unlike the C99 version, this one allows all combinations: human vs human, computer vs computer, etc. 
-
-Here is an example of two AIs battling on hard mode (depth = 6):
-
-<img src="doc/gomoku-ai-vs-ai.png" width="700" border="1" style="border-radius: 10px;"/>
+Unlike the C99 version, this one allows all combinations: human vs human, computer vs computer, etc.
 
 ### Core Gameplay
 
@@ -71,6 +70,7 @@ Here is an example of two AIs battling on hard mode (depth = 6):
 - **RAII**: Automatic memory management eliminating manual malloc/free
 
 ### Advanced AI Features
+
 - **Parallel Processing**: Multi-threaded AI search using custom thread pool
 - **Computer vs Computer**: Watch AIs battle each other with different difficulties
 - **Pattern Recognition**: Advanced threat-based evaluation system
@@ -78,6 +78,7 @@ Here is an example of two AIs battling on hard mode (depth = 6):
 - **Performance Tuning**: Configurable thread count and search parameters
 
 ### Development & Quality
+
 - **Dual Build Systems**: Both traditional Make and CMake with full C++23 support
 - **Comprehensive Testing**: 20 comprehensive tests using Google Test framework
 - **Cross-platform**: Works on Linux, macOS, and other Unix-like systems
@@ -170,6 +171,10 @@ Below is the screenshot of the help screen of the game, since it's a CLI/Termina
 #### Computer vs Computer (AI Battle Mode)
 
 Watch two AIs battle each other with different difficulty levels:
+
+<img src="doc/gomoku-ai-vs-ai.png" width="700" border="1" style="border-radius: 10px;"/>
+
+You can start Gomoku in this mode using `--player` flag, as follows:
 
 ```bash
 # AI vs AI: Hard vs Easy (skip welcome screen)
