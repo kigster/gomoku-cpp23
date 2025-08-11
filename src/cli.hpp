@@ -12,6 +12,8 @@
 #include <string_view>
 #include <span>
 #include <optional>
+#include <thread>
+#include <algorithm>
 #include "gomoku.hpp"
 
 namespace gomoku::cli {
@@ -42,7 +44,7 @@ struct Config {
     int board_size = 19;         // Board size (15 or 19)
     int max_depth = 4;           // AI search depth (default intermediate)
     int move_timeout = 0;        // Move timeout in seconds (0 = no timeout)
-    int thread_count = 0;        // Number of threads for parallel AI (0 = auto)
+    int thread_count = std::max(1u, std::thread::hardware_concurrency() - 1);  // Number of threads for parallel AI
     bool show_help = false;      // Whether to show help and exit
     bool enable_undo = false;    // Whether to enable undo feature
     bool skip_welcome = false;   // Whether to skip the welcome screen

@@ -51,7 +51,7 @@ build: 		$(TARGET) ## Build the Game
 rebuild: 	clean build ## Clean and rebuild the game
 
 $(TARGET): $(OBJECTS)
-		$(CXX) $(OBJECTS) $(LDFLAGS) -o $(TARGET)
+		$(CXX) $(OBJECTS) $(LDFLAGS) -o $(TARGET) 2>build.stderr
 
 # Compilation rules for C++ files
 src/%.o: src/%.cpp

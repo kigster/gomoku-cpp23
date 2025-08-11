@@ -92,6 +92,75 @@ private:
     int evaluate_move_sequential(game_state_t* game, int x, int y, int depth, 
                                 int alpha, int beta, int ai_player);
     
+    /**
+     * Enhanced parallel minimax with branch-level parallelization
+     * @param game Game state (will be cloned for thread safety)
+     * @param depth Current search depth
+     * @param alpha Alpha value for pruning
+     * @param beta Beta value for pruning
+     * @param maximizing_player Whether maximizing or minimizing
+     * @param ai_player The AI player value
+     * @param last_x X coordinate of last move
+     * @param last_y Y coordinate of last move
+     * @param min_parallel_depth Minimum depth to use parallelization
+     * @return Best score found
+     */
+    int parallel_minimax(game_state_t* game, int depth, int alpha, int beta,
+                        bool maximizing_player, int ai_player, int last_x, int last_y,
+                        int min_parallel_depth = 3);
+    
+    /**
+     * Structure for parallel minimax task
+     */
+    struct ParallelMinimaxTask {
+        game_state_t* game_clone;
+        move_t move;
+        int depth;
+        int alpha;
+        int beta;
+        bool maximizing_player;
+        int ai_player;
+        int min_parallel_depth;
+        
+        // Result - use pointers to make struct movable
+        std::unique_ptr<std::atomic<int>> score;
+        std::unique_ptr<std::atomic<bool>> completed;
+        
+        // Default constructor
+        ParallelMinimaxTask() 
+            : game_clone(nullptr), move{}, depth(0), alpha(0), beta(0), 
+              maximizing_player(false), ai_player(0), min_parallel_depth(0),
+              score(std::make_unique<std::atomic<int>>(-WIN_SCORE - 1)),
+              completed(std::make_unique<std::atomic<bool>>(false)) {}
+        
+        // Move constructor and assignment
+        ParallelMinimaxTask(ParallelMinimaxTask&&) = default;
+        ParallelMinimaxTask& operator=(ParallelMinimaxTask&&) = default;
+        
+        // Delete copy constructor and assignment
+        ParallelMinimaxTask(const ParallelMinimaxTask&) = delete;
+        ParallelMinimaxTask& operator=(const ParallelMinimaxTask&) = delete;
+    };
+    
+    /**
+     * Parallel maximizing node evaluation
+     */
+    int parallel_max_node(game_state_t* game, move_t* moves, int move_count, 
+                         int depth, int alpha, int beta, int ai_player, int min_parallel_depth);
+    
+    /**
+     * Parallel minimizing node evaluation
+     */
+    int parallel_min_node(game_state_t* game, move_t* moves, int move_count, 
+                         int depth, int alpha, int beta, int ai_player, int min_parallel_depth);
+    
+    /**
+     * Sequential node evaluation fallback
+     */
+    int sequential_minimax_node(game_state_t* game, move_t* moves, int move_count, 
+                               int depth, int alpha, int beta, bool maximizing_player, 
+                               int ai_player, int min_parallel_depth);
+    
     ThreadPool thread_pool_;
 };
 

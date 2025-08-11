@@ -113,9 +113,9 @@ void TerminalInput::handle_input(game_state_t* game) const {
         case static_cast<int>(Key::Space):
         case static_cast<int>(Key::Enter):
             if (game->current_player == static_cast<int>(Player::Cross) &&
-                    ::is_valid_move(game->board, game->cursor_x, game->cursor_y, game->board_size)) {
+                    ::is_valid_move(game->board, game->cursor_y, game->cursor_x, game->board_size)) {
                 double move_time = end_move_timer(game);
-                make_move(game, game->cursor_x, game->cursor_y, static_cast<int>(Player::Cross), move_time, 0);
+                make_move(game, game->cursor_y, game->cursor_x, static_cast<int>(Player::Cross), move_time, 0);
             }
             break;
         case '+':
@@ -322,8 +322,8 @@ void draw_status(const game_state_t* game) {
 
     // Position (convert to 1-based coordinates for display)
     auto position_str = std::format("Position       : [ {:2d}, {:2d} ]",
-                                   ::board_to_display_coord(game->cursor_x),
-                                   ::board_to_display_coord(game->cursor_y));
+                                   ::board_to_display_coord(game->cursor_y),
+                                   ::board_to_display_coord(game->cursor_x));
 
     std::printf("%s%s│ %-*s │\n", prefix.data(), COLOR_RESET, box_width - 4, position_str.c_str());
 
