@@ -46,7 +46,14 @@ See the following screenshot for an example:
 
 ## Features
 
+Unlike the C99 version, this one allows all combinations: human vs human, computer vs computer, etc. 
+
+Here is an example of two AIs battling on hard mode (depth = 6):
+
+<img src="doc/gomoku-ai-vs-ai.png" width="700" border="1" style="border-radius: 10px;"/>
+
 ### Core Gameplay
+
 - **Interactive Console Interface**: Unicode-based board display with keyboard controls
 - **Multiple Player Configurations**: Human vs AI, Human vs Human, **AI vs AI**
 - **Intelligent AI**: Advanced MiniMax algorithm with Alpha-Beta pruning
@@ -55,6 +62,7 @@ See the following screenshot for an example:
 - **Undo Functionality**: Undo the last move pair (human + AI)
 
 ### Modern C++23 Features
+
 - **Template-based Board Class**: Compile-time size validation with concepts
 - **std::expected**: Modern error handling without exceptions
 - **std::span & std::string_view**: Memory-safe, efficient string handling
