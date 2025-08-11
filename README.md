@@ -399,5 +399,6 @@ Contributions are welcome! Please feel free to submit issues, feature requests, 
 
 ## Version History
 
+- **v2.0.2**: [CPP23.md](CPP32.md) file describing C++23 features used and a fix to cursor directions
 - **v2.0.0**: Modern C++23 implementation with parallel processing and computer vs computer gameplay
 - **v1.x.x**: Original C implementation (see [github.com/kigster/gomoku-ansi-c](https://github.com/kigster/gomoku-ansi-c/))
