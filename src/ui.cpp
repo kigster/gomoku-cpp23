@@ -252,7 +252,7 @@ void draw_board(const game_state_t* game) {
         }
         for (int j = 0; j < game->board_size; j++) {
             // Check if cursor is at this position
-            bool is_cursor_here = (i == game->cursor_x && j == game->cursor_y);
+            bool is_cursor_here = (i == game->cursor_y && j == game->cursor_x);
 
             std::printf(" "); // Always add the space before the symbol
 

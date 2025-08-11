@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(gomoku VERSION 2.0.1 LANGUAGES CXX)
+project(gomoku VERSION 2.0.2 LANGUAGES CXX)
 
 # Set C++23 standard
 set(CMAKE_CXX_STANDARD 23)
