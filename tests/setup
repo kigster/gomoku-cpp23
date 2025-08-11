@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 # Basic setup for C/C++ dev environment
+# 
+# This replaces annoying git modules or some other methods of importing a project
+# into a source tree.
+# 
+# If this repo were to change frequently, then perhaps this wouldn't be the best
+# solution.
 
 set -e
 
@@ -34,11 +40,13 @@ mkdir -p build
 cd build
 echo "Configuring and building GoogleTest..."
 cmake .. && make -j 4
-
-echo "GoogleTest setup complete!"
-echo "You can now build the project using:"
-echo "  make                 # Traditional Make build"
-echo "  make cmake-build     # CMake build"
-echo "  make test            # Run tests with Make"
-echo "  make cmake-test      # Run tests with CMake"
+echo "———————————————————————————————————————————————————————————"
+echo -e "\033[1;32mGoogleTest setup complete!\033[0m"
+echo
+echo -e "You can now build the project using:"
+echo
+echo -e "  \033[0;33mmake                 \033[1;30m# Traditional Make build\033[0m"
+echo -e "  \033[0;33mmake cmake-build     \033[1;30m# CMake build\033[0m"
+echo -e "  \033[0;33mmake test            \033[1;30m# Run tests with Make\033[0m"
+echo -e "  \033[0;33mmake cmake-test      \033[1;30m# Run tests with CMake\033[0m"
 

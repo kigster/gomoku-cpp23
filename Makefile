@@ -72,6 +72,7 @@ test: 		$(TEST_TARGET) $(TARGET) ## Run all the unit tests
 
 clean:  	## Clean up all the intermediate objects
 		rm -f $(TARGET) $(TEST_TARGET) $(OBJECTS) tests/gomoku_test.o
+		rm -rf build
 
 tag:    	## Tag the current git version with the tag equal to the VERSION constant
 		git tag $(TAG) -f
