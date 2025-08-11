@@ -1,6 +1,6 @@
 # Gomoku Game - Modern C++23 Implementation
 
-A modern C++23 implementation of the Gomoku (Five-in-a-Row) game featuring intelligent AI opponents using the MiniMax algorithm with Alpha-Beta pruning and advanced parallel processing.
+A modern [C++23 implementation](CPP23.md) of the Gomoku (Five-in-a-Row) game featuring intelligent AI opponents using the MiniMax algorithm with Alpha-Beta pruning and advanced parallel processing.
 
 > [!NOTE]  
 > This is an enhanced C++23 version based on the original C implementation at [github.com/kigster/gomoku-ansi-c](https://github.com/kigster/gomoku-ansi-c/). This version includes significant additional features including **computer vs computer gameplay**, parallel AI processing, and modern C++23 language features.
