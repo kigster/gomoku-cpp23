@@ -11,6 +11,8 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
 endif()
 
+# Note: Set CC and CXX environment variables to use GCC 15.1 (same as Makefile)
+
 # Compiler flags for C++23
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wunused-parameter -Wpedantic")
 set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -DDEBUG")
