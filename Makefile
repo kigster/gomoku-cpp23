@@ -30,7 +30,6 @@ CPP_OBJECTS      = $(CPP_SOURCES:.cpp=.o)
 C_OBJECTS        = $(C_SOURCES:.c=.o)
 OBJECTS          = $(CPP_OBJECTS) $(C_OBJECTS)
 
-# HTTP daemon configuration  
 HTTPD_TARGET     = $(BIN)/gomoku-httpd
 HTTPD_CPP_SOURCES = src/httpd_main.cpp src/httpd_server.cpp src/httpd_cli.cpp src/httpd_game_api.cpp src/gomoku.cpp src/board.cpp src/ai.cpp src/game.cpp
 HTTPD_CPP_OBJECTS = $(HTTPD_CPP_SOURCES:.cpp=.o)

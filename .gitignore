@@ -1,5 +1,3 @@
-build.stderr
-/bin/*
 /game_histories
 gomoku
 test_gomoku
