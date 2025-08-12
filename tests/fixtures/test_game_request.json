@@ -1,0 +1,48 @@
+{
+  "version": "1.0",
+  "game": {
+    "id": "test-game-12345",
+    "status": "in_progress",
+    "board_size": 15,
+    "created_at": "2024-08-11T11:00:00Z",
+    "ai_config": {
+      "depth": 4
+    }
+  },
+  "players": {
+    "x": {
+      "nickname": "Human",
+      "type": "human"
+    },
+    "o": {
+      "nickname": "gomoku-cpp23",
+      "type": "ai"
+    }
+  },
+  "moves": [
+    {
+      "player": "x",
+      "position": {"x": 7, "y": 7},
+      "timestamp": "2024-08-11T11:00:01Z",
+      "move_time_ms": 1000
+    }
+  ],
+  "current_player": "o",
+  "board_state": [
+    ["empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty"],
+    ["empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty"],
+    ["empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty"],
+    ["empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty"],
+    ["empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty"],
+    ["empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty"],
+    ["empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty"],
+    ["empty","empty","empty","empty","empty","empty","empty","x","empty","empty","empty","empty","empty","empty","empty"],
+    ["empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty"],
+    ["empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty"],
+    ["empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty"],
+    ["empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty"],
+    ["empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty"],
+    ["empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty"],
+    ["empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty"]
+  ]
+}

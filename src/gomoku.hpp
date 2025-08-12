@@ -26,7 +26,7 @@ namespace gomoku {
 //===============================================================================
 
 inline constexpr std::string_view GAME_NAME = "Gomoku";
-inline constexpr std::string_view GAME_VERSION = "2.0.2";
+inline constexpr std::string_view GAME_VERSION = "3.0.0";
 inline constexpr std::string_view GAME_AUTHOR = "Konstantin Gredeskoul";
 inline constexpr std::string_view GAME_LICENSE = "MIT License";
 inline constexpr std::string_view GAME_URL = "https://github.com/kigster/gomoku-cpp23";

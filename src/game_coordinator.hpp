@@ -10,6 +10,7 @@
 #include "player.hpp"
 #include "game.h"
 #include "cli.hpp"
+#include "game_history.hpp"
 #include <memory>
 #include <string>
 
@@ -82,6 +83,9 @@ private:
     
     // Current player tracking
     int current_player_index_;  // 0 = player1, 1 = player2
+    
+    // Game history logging
+    std::unique_ptr<GameHistory> game_history_;
     
     /**
      * Initialize players from configuration

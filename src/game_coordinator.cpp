@@ -43,6 +43,15 @@ GameCoordinator::GameCoordinator(const cli_config_t& config)
     // Initialize players from configuration
     initialize_players(config);
     
+    // Initialize game history logging
+    game_history_ = std::make_unique<GameHistory>(config);
+    auto history_init = game_history_->initialize();
+    if (!history_init) {
+        // GameHistory::initialize() will call fatal_error and exit on failure
+        // This line should never be reached, but included for completeness
+        throw std::runtime_error("Failed to initialize game history logging");
+    }
+    
     // Initialize threat matrix
     populate_threat_matrix();
     
@@ -108,8 +117,42 @@ int GameCoordinator::run_game() {
         }
     }
     
-    // Game ended - show final state
+    // Game ended - update final status and show final state
     if (game_state_->game_state != static_cast<int>(GameState::Quit)) {
+        // Update game status in history
+        if (game_history_) {
+            std::string final_status;
+            switch (static_cast<GameState>(game_state_->game_state)) {
+                case GameState::HumanWin:
+                case GameState::AIWin: {
+                    // Determine winner by checking the last move made
+                    // The winner is the player who made the most recent move
+                    if (game_state_->move_history_count > 0) {
+                        const move_history_t& last_move = game_state_->move_history[game_state_->move_history_count - 1];
+                        if (last_move.player == static_cast<int>(Player::Cross)) {
+                            final_status = "game_over_x_wins";
+                        } else {
+                            final_status = "game_over_o_wins";
+                        }
+                    } else {
+                        final_status = "in_progress";  // Shouldn't happen, but safe fallback
+                    }
+                    break;
+                }
+                case GameState::Draw:
+                    final_status = "draw";
+                    break;
+                default:
+                    final_status = "in_progress";
+                    break;
+            }
+            
+            auto status_result = game_history_->update_game_status(final_status);
+            if (!status_result) {
+                // GameHistory will handle the fatal error
+            }
+        }
+        
         PlayerImpl* current_player = get_current_player();
         std::string current_name = current_player ? current_player->get_name() : "Unknown";
         
@@ -173,6 +216,21 @@ bool GameCoordinator::make_player_move() {
             if (current_player->get_type() == PlayerType::Computer) {
                 game_state_->last_ai_move_x = result.x;
                 game_state_->last_ai_move_y = result.y;
+            }
+            
+            // Log the move to game history
+            if (game_history_ && game_state_->move_history_count > 0) {
+                // Get the most recent move from history
+                const move_history_t& move = game_state_->move_history[game_state_->move_history_count - 1];
+                
+                // Check if this is a winning move
+                bool is_winning = (game_state_->game_state != static_cast<int>(GameState::Running));
+                
+                auto log_result = game_history_->log_move(move, is_winning);
+                if (!log_result) {
+                    // GameHistory::log_move() will call fatal_error and exit on failure
+                    // This should not happen, but handle gracefully
+                }
             }
             
             // Notify opponent of the move
