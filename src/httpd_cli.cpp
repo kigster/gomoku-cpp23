@@ -52,7 +52,7 @@ USAGE:
     {} [OPTIONS]
 
 OPTIONS:
-    -h, --help                Show this help message
+    -h, --help               Show this help message
     -v, --version            Show version information
     -p, --port <PORT>        TCP port to bind to (default: 5500)
     -H, --host <HOST>        IP address to bind to (default: 0.0.0.0)
