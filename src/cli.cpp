@@ -16,6 +16,7 @@
 #include <chrono>
 #include <thread>
 #include <cstdlib>
+#include <cstring>
 #include <getopt.h>
 #include "cli.hpp"
 #include "ansi.h"
@@ -86,13 +87,13 @@ auto Config::to_c_struct() const {
     c_config.skip_welcome = skip_welcome ? 1 : 0;
     
     // Copy player configurations
-    std::strncpy(c_config.player1_type, player1.type.c_str(), sizeof(c_config.player1_type) - 1);
-    std::strncpy(c_config.player1_name, player1.name.c_str(), sizeof(c_config.player1_name) - 1);
-    std::strncpy(c_config.player1_difficulty, player1.difficulty.c_str(), sizeof(c_config.player1_difficulty) - 1);
+    strncpy(c_config.player1_type, player1.type.c_str(), sizeof(c_config.player1_type) - 1);
+    strncpy(c_config.player1_name, player1.name.c_str(), sizeof(c_config.player1_name) - 1);
+    strncpy(c_config.player1_difficulty, player1.difficulty.c_str(), sizeof(c_config.player1_difficulty) - 1);
     
-    std::strncpy(c_config.player2_type, player2.type.c_str(), sizeof(c_config.player2_type) - 1);
-    std::strncpy(c_config.player2_name, player2.name.c_str(), sizeof(c_config.player2_name) - 1);
-    std::strncpy(c_config.player2_difficulty, player2.difficulty.c_str(), sizeof(c_config.player2_difficulty) - 1);
+    strncpy(c_config.player2_type, player2.type.c_str(), sizeof(c_config.player2_type) - 1);
+    strncpy(c_config.player2_name, player2.name.c_str(), sizeof(c_config.player2_name) - 1);
+    strncpy(c_config.player2_difficulty, player2.difficulty.c_str(), sizeof(c_config.player2_difficulty) - 1);
     
     return c_config;
 }

@@ -113,9 +113,9 @@ void TerminalInput::handle_input(game_state_t* game) const {
         case static_cast<int>(Key::Space):
         case static_cast<int>(Key::Enter):
             if (game->current_player == static_cast<int>(Player::Cross) &&
-                    ::is_valid_move(game->board, game->cursor_y, game->cursor_x, game->board_size)) {
+                    ::is_valid_move(game->board, game->cursor_x, game->cursor_y, game->board_size)) {
                 double move_time = end_move_timer(game);
-                make_move(game, game->cursor_y, game->cursor_x, static_cast<int>(Player::Cross), move_time, 0);
+                make_move(game, game->cursor_x, game->cursor_y, static_cast<int>(Player::Cross), move_time, 0);
             }
             break;
         case '+':
@@ -257,7 +257,7 @@ void draw_board(const game_state_t* game) {
             std::printf(" "); // Always add the space before the symbol
 
             // Show appropriate symbol based on cell content
-            if (game->board[i][j] == static_cast<int>(Player::Empty)) {
+            if (game->board[j][i] == static_cast<int>(Player::Empty)) {
                 if (is_cursor_here) {
                     // Empty cell with cursor: show yellow blinking cursor (no background)
                     std::printf("%s%s%s", COLOR_X_CURSOR, UNICODE_CURSOR.data(), COLOR_RESET);
@@ -265,7 +265,7 @@ void draw_board(const game_state_t* game) {
                     // Empty cell without cursor: show normal grid intersection
                     std::printf("%s%s%s", COLOR_RESET, UNICODE_EMPTY.data(), COLOR_RESET);
                 }
-            } else if (game->board[i][j] == static_cast<int>(Player::Cross)) {
+            } else if (game->board[j][i] == static_cast<int>(Player::Cross)) {
                 if (is_cursor_here) {
                     // Human stone with cursor: add grey background
                     std::printf("%s%s%s", COLOR_RESET, UNICODE_OCCUPIED.data(), COLOR_RESET);
@@ -279,7 +279,7 @@ void draw_board(const game_state_t* game) {
                     std::printf("%s%s%s", COLOR_RESET, UNICODE_OCCUPIED.data(), COLOR_RESET);
                 } else {
                     // AI stone without cursor: normal highlighting
-                    if (i == game->last_ai_move_x && j == game->last_ai_move_y) {
+                    if (j == game->last_ai_move_x && i == game->last_ai_move_y) {
                         std::printf("%s%s%s", COLOR_O_LAST_MOVE, UNICODE_NAUGHTS.data(), COLOR_RESET);
                     } else {
                         std::printf("%s%s%s", COLOR_O_NORMAL, UNICODE_NAUGHTS.data(), COLOR_RESET);
@@ -322,8 +322,8 @@ void draw_status(const game_state_t* game) {
 
     // Position (convert to 1-based coordinates for display)
     auto position_str = std::format("Position       : [ {:2d}, {:2d} ]",
-                                   ::board_to_display_coord(game->cursor_y),
-                                   ::board_to_display_coord(game->cursor_x));
+                                   ::board_to_display_coord(game->cursor_x),
+                                   ::board_to_display_coord(game->cursor_y));
 
     std::printf("%s%s│ %-*s │\n", prefix.data(), COLOR_RESET, box_width - 4, position_str.c_str());
 

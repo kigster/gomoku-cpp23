@@ -1,0 +1,158 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gomoku.example.com/schemas/gomoku.schema.json",
+  "title": "Gomoku Game State",
+  "description": "JSON schema for Gomoku game state representation for HTTP API",
+  "type": "object",
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Schema version",
+      "const": "1.0"
+    },
+    "game": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          "description": "UUID for the game session"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["in_progress", "game_over_x_wins", "game_over_o_wins", "draw"],
+          "description": "Current game status"
+        },
+        "board_size": {
+          "type": "integer",
+          "enum": [15, 19],
+          "description": "Board size (15x15 or 19x19)"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Game creation timestamp in ISO 8601 format"
+        },
+        "ai_config": {
+          "type": "object",
+          "properties": {
+            "depth": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10,
+              "description": "AI search depth for this game"
+            },
+            "timeout_ms": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "AI move timeout in milliseconds (0 = no timeout)"
+            }
+          },
+          "required": ["depth"]
+        }
+      },
+      "required": ["id", "status", "board_size", "created_at"]
+    },
+    "players": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "$ref": "#/$defs/player"
+        },
+        "o": {
+          "$ref": "#/$defs/player"
+        }
+      },
+      "required": ["x", "o"]
+    },
+    "moves": {
+      "type": "array",
+      "description": "Complete move history from first move to last",
+      "items": {
+        "$ref": "#/$defs/move"
+      }
+    },
+    "current_player": {
+      "type": "string",
+      "enum": ["x", "o"],
+      "description": "Player whose turn it is next"
+    },
+    "board_state": {
+      "type": "array",
+      "description": "Current board state as 2D array",
+      "items": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "enum": ["empty", "x", "o"]
+        }
+      }
+    }
+  },
+  "required": ["version", "game", "players", "moves", "current_player", "board_state"],
+  "$defs": {
+    "player": {
+      "type": "object",
+      "properties": {
+        "nickname": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 50,
+          "description": "Player display name"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["human", "ai"],
+          "description": "Player type"
+        }
+      },
+      "required": ["nickname", "type"]
+    },
+    "move": {
+      "type": "object",
+      "properties": {
+        "player": {
+          "type": "string",
+          "enum": ["x", "o"],
+          "description": "Player who made the move"
+        },
+        "position": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Row coordinate (0-based)"
+            },
+            "y": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Column coordinate (0-based)"
+            }
+          },
+          "required": ["x", "y"]
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the move was made (ISO 8601)"
+        },
+        "move_time_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Time taken to make this move in milliseconds"
+        },
+        "positions_evaluated": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of positions evaluated (for AI moves)"
+        },
+        "is_winning_move": {
+          "type": "boolean",
+          "description": "Whether this move won the game"
+        }
+      },
+      "required": ["player", "position", "timestamp", "move_time_ms"]
+    }
+  }
+}
