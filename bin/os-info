@@ -1,0 +1,183 @@
+#!/usr/bin/env bash
+# vim: ft=bash
+
+declare cwd
+export cwd="$(pwd -P)"
+
+declare script_path
+export script_path="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+
+command -v jq >/dev/null 2>&1 || {
+  # MacOS
+  command -v brew >/dev/null && {
+    brew install jq >/dev/null 2>&1
+  }
+  # Linux
+  command -v apt-get >/dev/null && {
+    sudo apt-get update -yqq >/dev/null
+    sudo apt-get install -y jq >/dev/null
+  }
+  echo "echo: This script requires 'jq' to be installed." >&2
+  exit 1
+}
+
+command -v jq >/dev/null || {
+  echo "echo: This script requires 'jq' to be installed." >&2
+  exit 2
+}
+
+declare hardware_cpu_type
+declare hardware_name
+declare hardware_model
+declare hardware_model_code
+declare hardware_ram
+declare hardware_processors
+declare hardware_os_name
+declare hardware_os_version
+declare hardware_os_build
+declare hardware_os_arch
+
+function machine::info::linux() {
+  echo "Linux is not yet supported." >&2
+  exit 1
+}
+
+# The raw function returns:
+# 0  Apple M3 Max
+# 1  MacBook Pro
+# 2  Mac15,9
+# 3  G1CM4LL/A
+# 4  64 GB
+# 5  proc 16:12:4
+# 6  macOS
+# 7  15.5
+# 8  24F74
+# 9  arm64
+function machine::info::macos() {
+  declare -a hardware_info=()
+  local raw_info
+  raw_info="$(mktemp)"
+  machine::info::macos::raw > "${raw_info}"
+  mapfile -t hardware_info< <(cat "${raw_info}")
+  rm -f "${raw_info}"
+  local index=0
+  for item in "${hardware_info[@]}"; do
+    case ${index} in
+    0)
+      hardware_cpu_type="${item}" ;;
+    1)
+      hardware_name="${item}" ;;
+    2)
+      hardware_model="${item}" ;;
+    3)
+      hardware_model_code="${item}" ;;
+    4)
+      hardware_ram="${item}" ;;
+    5)
+      hardware_processors="${item}" ;;
+    6)
+      hardware_os_name="${item}" ;;
+    7)
+      hardware_os_version="${item}" ;;
+    8)
+      hardware_os_build="${item}" ;;
+    9)
+      hardware_os_arch="${item}" ;;
+    *)
+      break
+      ;;
+    esac
+    index=$((index + 1))
+  done
+
+  sum_of_cpus=$(echo "${hardware_processors}" | sed 's/^proc //' | sed 's/:/+/g')
+  export hardware_cpus="$(( ${sum_of_cpus} ))"
+}
+
+function to_json() {
+  cat <<EOF
+{
+  "hardware": {
+    "cpu type":    "${hardware_cpu_type}",
+    "name":        "${hardware_name}",
+    "model":       "${hardware_model}",
+    "model code":  "${hardware_model_code}",
+    "processors":  "${hardware_processors}",
+    "ram":         "${hardware_ram}",
+    "cpus":        "${hardware_cpus}"
+  },
+  "os": {
+    "name":        "${hardware_os_name}",
+    "version":     "${hardware_os_version}",
+    "build":       "${hardware_os_build}",
+    "arch":        "${hardware_os_arch}"
+  }
+}
+EOF
+}
+
+# @description This function outputs to STDOUT the machine information one line
+# at a time, in a specific order
+#  0 Hardware CPU:         Apple M3 Max
+#  1 Hardware Name:        MacBook Pro
+#  2 Hardware Model:       Mac15,9
+#  3 Hardware Model No:    G1CM4LL/A
+#  4 Hardware RAM:         64 GB
+#  5 Hardware Processors:  proc 16:12:4
+#  6 Hardware OSName:      MacOS
+#  7 Hardware OSVersion:   15.5
+#  8 Hardware ModelNo:     24F74
+#  9 Hardware Arch:        arm64
+function machine::info::macos::raw() {
+  # @description Determine machine information and set global variables
+  # @uses system_profiler:
+  #   system_profiler SPHardwareDataType -json | jq
+  #   {
+  #     "SPHardwareDataType": [
+  #      {
+  #        "_name": "hardware_overview",
+  #        "activation_lock_status": "activation_lock_disabled",
+  #        "boot_rom_version": "11881.121.1",
+  #        "chip_type": "Apple M3 Max",
+  #        "hardware_model": "Mac15,9",
+  #        "hardware_name": "MacBook Pro",
+  #        "model_number": "G1CM4LL/A",
+  #        "number_processors": "proc 16:12:4",
+  #        "os_loader_version": "11881.121.1",
+  #        "physical_memory": "64 GB",
+  #        "platform_UUID": "4E28667C-24A3-5C90-B855-XXXXXXXXXX",
+  #        "provisioning_UDID": "00006031-000000000-XXXXXXXXX",
+  #        "serial_number": "XXXXXXXXXXXX"
+  #      }
+  #    ]
+  #  }
+  local fields=$(echo '.["SPHardwareDataType"][0]["chip_type"],' \
+    '.["SPHardwareDataType"][0]["machine_name"],' \
+    '.["SPHardwareDataType"][0]["machine_model"],' \
+    '.["SPHardwareDataType"][0]["model_number"],' \
+    '.["SPHardwareDataType"][0]["physical_memory"],' \
+    '.["SPHardwareDataType"][0]["number_processors"]' | tr -d ' ')
+
+  system_profiler SPHardwareDataType -json | jq -r "${fields}"
+
+  sw_vers -productName 2>/dev/null
+  sw_vers -productVersion 2>/dev/null
+  sw_vers -buildVersion 2>/dev/null
+  arch 2>/dev/null
+}
+
+main() {
+  export os=$(uname -s | tr '[:upper:]' '[:lower:]')
+  if [[ "${os}" == "darwin" ]]; then
+    machine::info::macos
+  elif [[ "${os}" == "linux" ]]; then
+    machine::info::linux
+  else
+    echo "echo: Unsupported OS '$(uname -s)'" >&2
+    exit 1
+  fi
+
+  to_json
+}
+
+main "$@"
