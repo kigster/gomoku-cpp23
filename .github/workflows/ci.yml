@@ -49,10 +49,10 @@ jobs:
     - name: Test binary execution
       run: |
         # Test that the binary runs and shows help
-        ./gomoku --help
+        ./bin/gomoku --help
         
         # Test that the binary can be invoked with various flags
-        timeout 5s ./gomoku --level easy --board 15 || true
+        timeout 5s ./bin/gomoku --level easy --board 15 || true
         echo "Binary execution test completed"
 
     - name: Check for memory leaks (Ubuntu only)
@@ -60,11 +60,12 @@ jobs:
       run: |
         sudo apt-get install -y valgrind
         # Run a quick memory check on the test binary
-        valgrind --leak-check=summary --error-exitcode=1 ./test_gomoku || echo "Memory check completed" 
+        valgrind --leak-check=summary --error-exitcode=1 ./bin/test_gomoku || echo "Memory check completed" 
 
     - name: Build httpd
       run: |
         make httpd
+        ./bin/gomoku-httpd -h
 
     - name: Run httpd Tests
       run: |

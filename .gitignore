@@ -1,6 +1,7 @@
 /game_histories
 /bin/gomoku*
 /bin/test*
+/tests/tests/googletest
 ##### Windows
 # Windows thumbnail cache files
 Thumbs.db
