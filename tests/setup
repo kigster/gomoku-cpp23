@@ -57,7 +57,5 @@ echo -e "\033[1;32mGoogleTest setup complete!\033[0m"
 echo
 echo -e "You can now build the project using:"
 echo
-echo -e "  \033[0;33mmake                 \033[1;30m# Traditional Make build\033[0m"
-echo -e "  \033[0;33mmake cmake-build     \033[1;30m# CMake build\033[0m"
-echo -e "  \033[0;33mmake test            \033[1;30m# Run tests with Make\033[0m"
-echo -e "  \033[0;33mmake cmake-test      \033[1;30m# Run tests with CMake\033[0m"
+echo -e "  \033[0;33mmake help            \033[1;30m# See what options exist from Makefile\033[0m"
+echo

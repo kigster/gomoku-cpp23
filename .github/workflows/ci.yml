@@ -62,3 +62,11 @@ jobs:
         # Run a quick memory check on the test binary
         valgrind --leak-check=summary --error-exitcode=1 ./test_gomoku || echo "Memory check completed" 
 
+    - name: Build httpd
+      run: |
+        make httpd
+
+    - name: Run httpd Tests
+      run: |
+        make test-httpd
+
