@@ -81,9 +81,19 @@ json GameAPI::create_empty_game(int board_size, const std::string& game_id) {
     game["moves"] = json::array();
     game["current_player"] = "x";
     
-    // Initialize empty board
-    std::vector<std::vector<std::string>> board_state(board_size, 
-        std::vector<std::string>(board_size, "empty"));
+    // Initialize empty board as visual strings
+    std::vector<std::string> board_state;
+    board_state.reserve(board_size);
+    
+    std::string empty_row;
+    empty_row.reserve(board_size * 3);
+    for (int j = 0; j < board_size; ++j) {
+        empty_row += " • ";
+    }
+    
+    for (int i = 0; i < board_size; ++i) {
+        board_state.push_back(empty_row);
+    }
     game["board_state"] = board_state;
     
     return game;
@@ -320,28 +330,33 @@ std::expected<move_history_t, GameAPIError> GameAPI::deserialize_move(const json
     }
 }
 
-std::vector<std::vector<std::string>> GameAPI::serialize_board(int** board, int size) const {
-    std::vector<std::vector<std::string>> board_state(size, std::vector<std::string>(size));
+std::vector<std::string> GameAPI::serialize_board(int** board, int size) const {
+    std::vector<std::string> board_rows;
+    board_rows.reserve(size);
     
     for (int i = 0; i < size; ++i) {
+        std::string row;
+        row.reserve(size * 3);  // Each cell takes 3 characters
+        
         for (int j = 0; j < size; ++j) {
             switch (board[i][j]) {
                 case static_cast<int>(Player::Empty):
-                    board_state[i][j] = "empty";
+                    row += " • ";
                     break;
                 case static_cast<int>(Player::Cross):
-                    board_state[i][j] = "x";
+                    row += " x ";
                     break;
                 case static_cast<int>(Player::Naught):
-                    board_state[i][j] = "o";
+                    row += " o ";
                     break;
                 default:
-                    board_state[i][j] = "empty";
+                    row += " • ";
             }
         }
+        board_rows.push_back(row);
     }
     
-    return board_state;
+    return board_rows;
 }
 
 std::expected<void, GameAPIError> GameAPI::deserialize_board(

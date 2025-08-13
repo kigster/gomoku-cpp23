@@ -144,6 +144,16 @@ void HttpServer::handle_move(const httplib::Request& req, httplib::Response& res
     try {
         json request_json = json::parse(req.body);
         
+        // Validate request against schema
+        auto validation_result = validate_move_request(request_json);
+        if (!validation_result) {
+            res.status = 501;
+            auto error_response = create_error_response(
+                std::format("Schema validation failed: {}", validation_result.error()), 501);
+            res.set_content(error_response.dump(), "application/json");
+            return;
+        }
+        
         auto move_result = game_api_->process_move_request(request_json);
         if (!move_result) {
             res.status = 400;
@@ -253,6 +263,102 @@ json HttpServer::get_system_metrics() const {
     }
     
     return metrics;
+}
+
+std::expected<json, std::string> HttpServer::validate_move_request(const json& request) const {
+    try {
+        // Check required top-level fields
+        if (!request.contains("version") || request["version"] != "1.0") {
+            return std::unexpected("Missing or invalid 'version' field (must be '1.0')");
+        }
+        
+        if (!request.contains("game") || !request["game"].is_object()) {
+            return std::unexpected("Missing or invalid 'game' object");
+        }
+        
+        if (!request.contains("players") || !request["players"].is_object()) {
+            return std::unexpected("Missing or invalid 'players' object");
+        }
+        
+        if (!request.contains("moves") || !request["moves"].is_array()) {
+            return std::unexpected("Missing or invalid 'moves' array");
+        }
+        
+        if (!request.contains("current_player") || !request["current_player"].is_string()) {
+            return std::unexpected("Missing or invalid 'current_player' field");
+        }
+        
+        // board_state is now optional (can be reconstructed from moves)
+        
+        // Validate game object
+        const auto& game = request["game"];
+        if (!game.contains("id") || !game["id"].is_string()) {
+            return std::unexpected("Missing or invalid game.id");
+        }
+        
+        if (!game.contains("board_size") || !game["board_size"].is_number_integer()) {
+            return std::unexpected("Missing or invalid game.board_size");
+        }
+        
+        int board_size = game["board_size"];
+        if (board_size != 15 && board_size != 19) {
+            return std::unexpected("game.board_size must be 15 or 19");
+        }
+        
+        // Validate current_player
+        std::string current_player = request["current_player"];
+        if (current_player != "x" && current_player != "o") {
+            return std::unexpected("current_player must be 'x' or 'o'");
+        }
+        
+        // Validate board_state format if provided (it's optional)
+        if (request.contains("board_state")) {
+            if (!request["board_state"].is_array()) {
+                return std::unexpected("board_state must be an array if provided");
+            }
+            
+            const auto& board_state = request["board_state"];
+            if (static_cast<int>(board_state.size()) != board_size) {
+                return std::unexpected(std::format("board_state must have exactly {} rows for board size {}", 
+                                                 board_size, board_size));
+            }
+            
+            // Validate each row format
+            for (size_t i = 0; i < board_state.size(); ++i) {
+                if (!board_state[i].is_string()) {
+                    return std::unexpected(std::format("board_state row {} must be a string", i));
+                }
+                
+                std::string row = board_state[i];
+                size_t expected_length = board_size * 3;  // Each cell is 3 characters
+                if (row.length() != expected_length) {
+                    return std::unexpected(std::format("board_state row {} must be exactly {} characters long", 
+                                                     i, expected_length));
+                }
+                
+                // Validate row pattern: each position should be " • ", " x ", or " o "
+                for (int j = 0; j < board_size; ++j) {
+                    size_t pos = j * 3;
+                    if (pos + 2 >= row.length()) {
+                        return std::unexpected(std::format("board_state row {} is malformed at position {}", i, j));
+                    }
+                    
+                    std::string cell = row.substr(pos, 3);
+                    if (cell != " • " && cell != " x " && cell != " o ") {
+                        return std::unexpected(std::format("board_state row {} position {} has invalid cell '{}' (must be ' • ', ' x ', or ' o ')", 
+                                                         i, j, cell));
+                    }
+                }
+            }
+        }
+        
+        return request;  // Validation successful
+        
+    } catch (const json::exception& e) {
+        return std::unexpected(std::format("JSON parsing error: {}", e.what()));
+    } catch (const std::exception& e) {
+        return std::unexpected(std::format("Validation error: {}", e.what()));
+    }
 }
 
 json HttpServer::create_error_response(const std::string& error, int code) const {

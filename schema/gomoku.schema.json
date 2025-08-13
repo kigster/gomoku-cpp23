@@ -79,17 +79,17 @@
     },
     "board_state": {
       "type": "array",
-      "description": "Current board state as 2D array",
+      "description": "Current board state as visual strings (each string represents one row)",
       "items": {
-        "type": "array",
-        "items": {
-          "type": "string",
-          "enum": ["empty", "x", "o"]
-        }
-      }
+        "type": "string",
+        "pattern": "^( [•xo] ){15}$|^( [•xo] ){19}$",
+        "description": "Board row as visual string: ' • ' for empty, ' x ' for X player, ' o ' for O player"
+      },
+      "minItems": 15,
+      "maxItems": 19
     }
   },
-  "required": ["version", "game", "players", "moves", "current_player", "board_state"],
+  "required": ["version", "game", "players", "moves", "current_player"],
   "$defs": {
     "player": {
       "type": "object",

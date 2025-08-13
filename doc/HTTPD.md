@@ -68,6 +68,7 @@ make httpd-clean
 Returns server health information and system metrics.
 
 **Response Example:**
+
 ```json
 {
   "status": "healthy",
@@ -106,13 +107,15 @@ Returns server health information and system metrics.
 Accepts a complete game state and returns the AI's best move.
 
 **Request Headers:**
+
 ```
 Content-Type: application/json
 ```
 
-**Request Body:** Complete game state (see JSON Schema section)
+**Request Body:** Complete game state (see JSON Schema section). Note that `board_state` in JSON is purely for visual representation only, and is not used or parsed by the server.
 
 **Response Example:**
+
 ```json
 {
   "game_id": "test-game-12345",
@@ -129,9 +132,11 @@ Content-Type: application/json
     "is_winning_move": false
   },
   "board_state": [
-    ["empty", "empty", "empty", ...],
-    ["empty", "empty", "empty", ...],
-    ...
+    " •  •  •  •  •  •  •  •  •  •  •  •  •  •  • ",
+    " •  •  •  •  •  •  •  •  •  •  •  •  •  •  • ",
+    " •  •  •  •  •  •  •  x  •  •  •  •  •  •  • ",
+    " •  •  •  •  •  •  •  •  •  o  •  •  •  •  • ",
+    "..."
   ],
   "move_history": [...],
   "ai_metrics": {
@@ -143,7 +148,7 @@ Content-Type: application/json
 
 ### 3. JSON Schema - `GET /gomoku.schema.json`
 
-Returns the JSON schema for game state validation.
+Returns the JSON schema for game state validation. See [JSON schema fille]("../schema/gomoku.schema.json").
 
 ### 4. Health Check - `GET /health`
 
@@ -222,21 +227,21 @@ curl -s -X POST -H "Content-Type: application/json" \
   "moves": [],
   "current_player": "x",
   "board_state": [
-    ["empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty"],
-    ["empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty"],
-    ["empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty"],
-    ["empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty"],
-    ["empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty"],
-    ["empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty"],
-    ["empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty"],
-    ["empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty"],
-    ["empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty"],
-    ["empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty"],
-    ["empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty"],
-    ["empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty"],
-    ["empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty"],
-    ["empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty"],
-    ["empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty"]
+    " •  •  •  •  •  •  •  •  •  •  •  •  •  •  • ",
+    " •  •  •  •  •  •  •  •  •  •  •  •  •  •  • ",
+    " •  •  •  •  •  •  •  •  •  •  •  •  •  •  • ",
+    " •  •  •  •  •  •  •  •  •  •  •  •  •  •  • ",
+    " •  •  •  •  •  •  •  •  •  •  •  •  •  •  • ",
+    " •  •  •  •  •  •  •  •  •  •  •  •  •  •  • ",
+    " •  •  •  •  •  •  •  •  •  •  •  •  •  •  • ",
+    " •  •  •  •  •  •  •  •  •  •  •  •  •  •  • ",
+    " •  •  •  •  •  •  •  •  •  •  •  •  •  •  • ",
+    " •  •  •  •  •  •  •  •  •  •  •  •  •  •  • ",
+    " •  •  •  •  •  •  •  •  •  •  •  •  •  •  • ",
+    " •  •  •  •  •  •  •  •  •  •  •  •  •  •  • ",
+    " •  •  •  •  •  •  •  •  •  •  •  •  •  •  • ",
+    " •  •  •  •  •  •  •  •  •  •  •  •  •  •  • ",
+    " •  •  •  •  •  •  •  •  •  •  •  •  •  •  • "
   ]
 }' \
 http://localhost:5500/ai/v1/move | jq '.latest_move'
@@ -244,52 +249,100 @@ http://localhost:5500/ai/v1/move | jq '.latest_move'
 
 **Mid-Game Position (AI as O responds to X's move):**
 
+> [!TIP]
+> Note that supplying "board_state" is unnecessary since it can be definitively deduced from the sequence of moves.
+
 ```bash
-curl -s -X POST -H "Content-Type: application/json" \
--d '{
-  "version": "1.0",
-  "game": {
-    "id": "mid-game-001",
-    "status": "in_progress", 
-    "board_size": 15,
-    "created_at": "2024-08-11T12:00:00Z",
-    "ai_config": {"depth": 6}
-  },
-  "players": {
-    "x": {"nickname": "Human", "type": "human"},
-    "o": {"nickname": "gomoku-cpp23", "type": "ai"}
-  },
-  "moves": [
-    {
-      "player": "x",
-      "position": {"x": 7, "y": 7},
-      "timestamp": "2024-08-11T12:00:01Z",
-      "move_time_ms": 1000
-    }
-  ],
-  "current_player": "o",
-  "board_state": [
-    ["empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty"],
-    ["empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty"],
-    ["empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty"],
-    ["empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty"],
-    ["empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty"],
-    ["empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty"],
-    ["empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty"],
-    ["empty","empty","empty","empty","empty","empty","empty","x","empty","empty","empty","empty","empty","empty","empty"],
-    ["empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty"],
-    ["empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty"],
-    ["empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty"],
-    ["empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty"],
-    ["empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty"],
-    ["empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty"],
-    ["empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty","empty"]
-  ]
-}' \
-http://localhost:5500/ai/v1/move | jq '{move: .latest_move, status: .game_status}'
+curl -s -X POST -H "Content-Type: application/json" -d '{
+    "version": "1.0",
+    "game": {
+      "id": "mid-game-001",
+      "status": "in_progress",
+      "board_size": 15,
+      "created_at": "2024-08-11T12:00:00Z",
+      "ai_config": {"depth": 6}
+    },
+    "players": {
+      "x": {"nickname": "Human", "type": "human"},
+      "o": {"nickname": "gomoku-cpp23", "type": "ai"}
+    },
+    "moves": [
+      {
+        "player": "x",
+        "position": {"x": 7, "y": 7},
+        "timestamp": "2024-08-11T12:00:01Z",
+        "move_time_ms": 1000
+      }
+    ],
+    "current_player": "o"
+  }' http://localhost:5500/ai/v1/move
 ```
 
-### Error Handling Tests
+Response will be:
+
+```json
+{
+  "ai_metrics": {
+    "move_time_ms": 0,
+    "positions_evaluated": 0
+  },
+  "board_state": [
+    " •  •  •  •  •  •  •  •  •  •  •  •  •  •  • ",
+    " •  •  •  •  •  •  •  •  •  •  •  •  •  •  • ",
+    " •  •  •  •  •  •  •  •  •  •  •  •  •  •  • ",
+    " •  •  •  •  •  •  •  •  •  •  •  •  •  •  • ",
+    " •  •  •  •  •  •  •  •  •  •  •  •  •  •  • ",
+    " •  •  •  •  •  •  •  •  •  •  •  •  •  •  • ",
+    " •  •  •  •  •  •  •  •  •  •  •  •  •  •  • ",
+    " •  •  •  •  •  •  •  o  •  •  •  •  •  •  • ",
+    " •  •  •  •  •  •  •  •  •  •  •  •  •  •  • ",
+    " •  •  •  •  •  •  •  •  •  •  •  •  •  •  • ",
+    " •  •  •  •  •  •  •  •  •  •  •  •  •  •  • ",
+    " •  •  •  •  •  •  •  •  •  •  •  •  •  •  • ",
+    " •  •  •  •  •  •  •  •  •  •  •  •  •  •  • ",
+    " •  •  •  •  •  •  •  •  •  •  •  •  •  •  • ",
+    " •  •  •  •  •  •  •  •  •  •  •  •  •  •  • "
+  ],
+  "game_id": "mid-game-001",
+  "game_status": "in_progress",
+  "latest_move": {
+    "is_winning_move": false,
+    "move_time_ms": 0,
+    "player": "x",
+    "position": {
+      "x": 7,
+      "y": 7
+    },
+    "positions_evaluated": 0,
+    "timestamp": "2025-08-13T00:50:19.772994000Z"
+  },
+  "move_history": [
+    {
+      "move_time_ms": 1000,
+      "player": "x",
+      "position": {
+        "x": 7,
+        "y": 7
+      },
+      "positions_evaluated": 1,
+      "timestamp": "2025-08-13T00:50:19.773007000Z"
+    },
+    {
+      "move_time_ms": 0,
+      "player": "o",
+      "position": {
+        "x": 7,
+        "y": 7
+      },
+      "positions_evaluated": 0,
+      "timestamp": "2025-08-13T00:50:19.773008000Z"
+    }
+  ]
+}
+```
+
+#
+
 
 ```bash
 # Test invalid JSON

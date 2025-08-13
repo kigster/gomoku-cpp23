@@ -45,7 +45,7 @@ struct MoveResponse {
     std::string game_id;
     json move;
     std::string game_status;
-    std::vector<std::vector<std::string>> board_state;
+    std::vector<std::string> board_state;  // Now array of visual strings
     std::vector<json> move_history;
     int positions_evaluated = 0;
     int move_time_ms = 0;
@@ -72,7 +72,7 @@ private:
     json serialize_move(const move_history_t& move) const;
     std::expected<move_history_t, GameAPIError> deserialize_move(const json& move_json) const;
     
-    std::vector<std::vector<std::string>> serialize_board(int** board, int size) const;
+    std::vector<std::string> serialize_board(int** board, int size) const;
     std::expected<void, GameAPIError> deserialize_board(
         const std::vector<std::vector<std::string>>& board_json, 
         int** board, int size) const;

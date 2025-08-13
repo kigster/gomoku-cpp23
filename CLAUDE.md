@@ -6,6 +6,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a **modern C++23 implementation** of Gomoku (Five in a Row) that was successfully refactored from a C99 codebase. The project leverages advanced C++23 features while maintaining full compatibility with both traditional Make and CMake build systems.
 
+We suggest you read all the markdown files available in including the README.md and the other files under ./doc folder.
+
+The build system supports both `make` and `cmake`. So scan the `Makefile` and `CMakeLists.txt` files.
+
 ## Development Commands
 
 ### Setup (First Time)
