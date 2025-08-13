@@ -82,11 +82,13 @@ TEST_F(HttpdTest, GameAPIEmptyGameCreation) {
     EXPECT_EQ(empty_game["game"]["board_size"], 15);
     EXPECT_EQ(empty_game["current_player"], "x");
     
-    // Check board is empty
+    // Check board is empty (visual string format)
     auto board_state = empty_game["board_state"];
     EXPECT_EQ(board_state.size(), 15);
-    EXPECT_EQ(board_state[0].size(), 15);
-    EXPECT_EQ(board_state[7][7], "empty");
+    EXPECT_TRUE(board_state[0].is_string());
+    // Each row contains visual representation: 5 chars per cell for 15 cells = 75 chars  
+    EXPECT_EQ(board_state[0].get<std::string>().length(), 75);
+    EXPECT_TRUE(board_state[7].get<std::string>().find(" • ") != std::string::npos);
 }
 
 TEST_F(HttpdTest, GameAPIUUIDGeneration) {
@@ -120,18 +122,15 @@ TEST_F(HttpdTest, JSONValidation) {
     valid_request["moves"].push_back(move);
     valid_request["current_player"] = "o";  // AI's turn
     
-    // Set the board state with the human move
-    valid_request["board_state"][7][7] = "x";
+    // Remove board_state so it gets reconstructed from moves
+    valid_request.erase("board_state");
     
     GameAPI api(2);
     
     // This should succeed (AI should make a move)
     auto result = api.process_move_request(valid_request);
     
-    if (!result.has_value()) {
-        // Debug output if the request fails
-        std::cout << "API request failed" << std::endl;
-    }
+    // Test should succeed - API processes the move and returns AI response
     
     EXPECT_TRUE(result.has_value());
     

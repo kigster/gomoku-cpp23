@@ -42,8 +42,8 @@ TEST_C_SOURCES   =
 TEST_CPP_OBJECTS = $(TEST_CPP_SOURCES:.cpp=.o)
 TEST_C_OBJECTS   = $(TEST_C_SOURCES:.c=.o)
 TEST_OBJECTS     = $(TEST_CPP_OBJECTS) $(TEST_C_OBJECTS)
-GTEST_LIB        = tests/googletest/build/lib/libgtest.a
-GTEST_MAIN_LIB   = tests/googletest/build/lib/libgtest_main.a
+GTEST_LIB        = tests/googletest/tests/googletest/build/lib/libgtest.a
+GTEST_MAIN_LIB   = tests/googletest/tests/googletest/build/lib/libgtest_main.a
 
 # HTTP daemon test configuration
 HTTPD_TEST_TARGET      = $(BIN)/test-gomoku-httpd
@@ -66,6 +66,8 @@ version:        ## Prints the current version and tag
 	        @echo "Version is $(VERSION)"
 		@echo "The tag is $(TAG)"
 
+all:  		build httpd test test-httpd ## Build everything and run all tests
+
 build: 		$(TARGET) ## Build the Game
  
 rebuild: 	clean build ## Clean and rebuild the game
@@ -86,10 +88,14 @@ src/%.o: src/%.cpp
 src/%.o: src/%.c
 		$(CC) $(CFLAGS) -c $< -o $@
 
-$(TEST_TARGET): $(TEST_OBJECTS) # Test targets
+# Ensure bin directory exists
+$(BIN):
+		mkdir -p $(BIN)
+
+$(TEST_TARGET): $(TEST_OBJECTS) | $(BIN) # Test targets
 		$(CXX) $(CXXFLAGS) $(TEST_OBJECTS) $(GTEST_LIB) $(GTEST_MAIN_LIB) -o $(TEST_TARGET)
 
-$(HTTPD_TEST_TARGET): $(HTTPD_TEST_OBJECTS) # HTTP daemon test targets
+$(HTTPD_TEST_TARGET): $(HTTPD_TEST_OBJECTS) | $(BIN) # HTTP daemon test targets
 		$(CXX) $(CXXFLAGS) $(HTTPD_TEST_OBJECTS) $(GTEST_LIB) $(GTEST_MAIN_LIB) $(LDFLAGS) -o $(HTTPD_TEST_TARGET)
 
 tests/gomoku_test.o: tests/gomoku_test.cpp src/gomoku.hpp src/board.hpp src/game.h
@@ -99,10 +105,10 @@ tests/httpd_test.o: tests/httpd_test.cpp src/httpd_cli.hpp src/httpd_game_api.hp
 		$(CXX) $(CXXFLAGS) -c tests/httpd_test.cpp -o tests/httpd_test.o
 
 test: 		$(TEST_TARGET) $(TARGET) ## Run all the unit tests
-		./$(TEST_TARGET)
+		$(TEST_TARGET)
 
 test-httpd:	$(HTTPD_TEST_TARGET) ## Run HTTP daemon unit tests
-		./$(HTTPD_TEST_TARGET)
+		$(HTTPD_TEST_TARGET)
 
 clean:  	## Clean up all the intermediate objects
 		rm -f $(TARGET) $(TEST_TARGET) $(HTTPD_TARGET) $(HTTPD_TEST_TARGET) $(OBJECTS) $(HTTPD_OBJECTS) $(HTTPD_TEST_OBJECTS) tests/gomoku_test.o tests/httpd_test.o

@@ -39,7 +39,19 @@ echo "Building GoogleTest..."
 mkdir -p build
 cd build
 echo "Configuring and building GoogleTest..."
-cmake .. && make -j 4
+
+# Use the same compiler and C++ standard as the main project
+if command -v g++-15 >/dev/null 2>&1; then
+    echo "Using GCC-15 for GoogleTest build..."
+    export CC=gcc-15
+    export CXX=g++-15
+    cmake -DCMAKE_CXX_STANDARD=23 -DCMAKE_CXX_COMPILER=g++-15 -DCMAKE_C_COMPILER=gcc-15 ..
+else
+    echo "Using system compiler for GoogleTest build..."
+    cmake -DCMAKE_CXX_STANDARD=23 ..
+fi
+
+make -j 4
 echo "———————————————————————————————————————————————————————————"
 echo -e "\033[1;32mGoogleTest setup complete!\033[0m"
 echo
@@ -49,4 +61,3 @@ echo -e "  \033[0;33mmake                 \033[1;30m# Traditional Make build\033
 echo -e "  \033[0;33mmake cmake-build     \033[1;30m# CMake build\033[0m"
 echo -e "  \033[0;33mmake test            \033[1;30m# Run tests with Make\033[0m"
 echo -e "  \033[0;33mmake cmake-test      \033[1;30m# Run tests with CMake\033[0m"
-
