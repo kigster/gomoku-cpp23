@@ -1,9 +1,17 @@
 [![CI](https://github.com/kigster/gomoku-cpp23/actions/workflows/ci.yml/badge.svg)](https://github.com/kigster/gomoku-cpp23/actions/workflows/ci.yml)
 
-# Gomoku Game - Modern C++ Implementation (Requires C++23)
+# Gomoku Game - Modern C++ Implementation 
 
 > [!TIP]
-> This is a modern [C++23 implementation](doc/CPP23.md) of the [Gomoku](https://en.wikipedia.org/wiki/Gomoku) (aka "Five-in-a-Row") game (also known as "Renju", or in the eastern countries, "Crosses and Naughts") featuring an intelligent AI opponent that leans on the MiniMax algorithm with Alpha-Beta pruning, and advanced parallel processing.
+> This is a modern [C++23 implementation](doc/CPP23.md) of the [Gomoku](https://en.wikipedia.org/wiki/Gomoku) (aka "Five-in-a-Row") game (also known as "Renju", or in the eastern countries, "Crosses and Naughts") featuring an intelligent AI opponent that leans on the MiniMax algorithm with Alpha-Beta pruning, and advanced parallel processing.  
+
+> [!CAUTION]
+> To build this project requires C++23 compatible compiler, such as gcc-11 (the earliest version supporting C++23 features), but recommended at least gcc-15. For `clang` compiler, you need Clang-16 as a likely minimum, but Clang-17 is preferred). You can use either `make` or `cmake` to build the project.
+
+## OS Support
+
+* This project has been developed on MacOS, and builds/compiles on both Apple M-series and Intel prrocessors.
+* Linux support will be added in a short future.
 
 ## Project Structure
 
